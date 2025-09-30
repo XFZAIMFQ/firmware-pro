@@ -25,47 +25,57 @@
 #include <stdint.h>
 #include "secbool.h"
 
-typedef enum {
-  STAY_REASON_NONE = 0,
-  STAY_REASON_REQUIRED_BY_FLAG,
-  STAY_REASON_MANUAL_OVERRIDE,
-  STAY_REASON_INVALID_DEPENDENCY,
-  STAY_REASON_INVALID_NEXT_TARGET,
-  STAY_REASON_UPDATE_NEXT_TARGET,
-  STAY_REASON_UNKNOWN,
+/**
+ * @brief 启动后停留在当前阶段的原因
+ *
+ */
+typedef enum
+{
+    STAY_REASON_NONE = 0,            // 正常
+    STAY_REASON_REQUIRED_BY_FLAG,    // 由BOOT_TARGET_FLAG_ADDR指定
+    STAY_REASON_MANUAL_OVERRIDE,     // 用户干预
+    STAY_REASON_INVALID_DEPENDENCY,  // 依赖无效
+    STAY_REASON_INVALID_NEXT_TARGET, // 下一启动目标无效
+    STAY_REASON_UPDATE_NEXT_TARGET,  // 更新下一启动目标
+    STAY_REASON_UNKNOWN,             // 未知原因
 } STAY_REASON;
 
-typedef enum {
-  BOOT_TARGET_NORMAL = 0,
-  BOOT_TARGET_BOARDLOADER = 0x64616F62,
-  BOOT_TARGET_BOOTLOADER = 0x746F6F62,
+/**
+ * @brief 启动目标
+ *
+ */
+typedef enum
+{
+    BOOT_TARGET_NORMAL = 0,               // 正常启动
+    BOOT_TARGET_BOARDLOADER = 0x64616F62, // boardloader
+    BOOT_TARGET_BOOTLOADER = 0x746F6F62,  // bootloader
 } volatile BOOT_TARGET;
 
-#define BOOT_TARGET_FLAG_ADDR ((BOOT_TARGET *)(0x30040000 - 4))
+#define BOOT_TARGET_FLAG_ADDR ((BOOT_TARGET*)(0x30040000 - 4))
 
 #ifndef MIN_8bits
-#define MIN_8bits(a, b)                  \
-  ({                                     \
-    typeof(a) _a = (a);                  \
-    typeof(b) _b = (b);                  \
-    _a < _b ? (_a & 0xFF) : (_b & 0xFF); \
-  })
+  #define MIN_8bits(a, b)            \
+    ({                               \
+typeof(a) _a = (a);                  \
+typeof(b) _b = (b);                  \
+_a < _b ? (_a & 0xFF) : (_b & 0xFF); \
+    })
 #endif
 #ifndef MIN
-#define MIN(a, b)       \
-  ({                    \
-    typeof(a) _a = (a); \
-    typeof(b) _b = (b); \
-    _a < _b ? _a : _b;  \
-  })
+  #define MIN(a, b) \
+    ({              \
+typeof(a) _a = (a); \
+typeof(b) _b = (b); \
+_a < _b ? _a : _b;  \
+    })
 #endif
 #ifndef MAX
-#define MAX(a, b)       \
-  ({                    \
-    typeof(a) _a = (a); \
-    typeof(b) _b = (b); \
-    _a > _b ? _a : _b;  \
-  })
+  #define MAX(a, b) \
+    ({              \
+typeof(a) _a = (a); \
+typeof(b) _b = (b); \
+_a > _b ? _a : _b;  \
+    })
 #endif
 
 extern const uint8_t toi_icon_warning[321];
@@ -79,30 +89,22 @@ void reboot_to_board(void);
 void reboot_to_boot(void);
 
 void __attribute__((noreturn))
-__fatal_error(const char *expr, const char *msg, const char *file, int line,
-              const char *func);
+__fatal_error(const char* expr, const char* msg, const char* file, int line, const char* func);
 void __attribute__((noreturn))
-error_shutdown(const char *line1, const char *line2, const char *line3,
-               const char *line4);
+error_shutdown(const char* line1, const char* line2, const char* line3, const char* line4);
 
-void error_reset(const char *line1, const char *line2, const char *line3,
-                 const char *line4);
+void error_reset(const char* line1, const char* line2, const char* line3, const char* line4);
 void error_pin_max_prompt(void);
 
 // cannot use like this due to code size issue
 // waiting until we could outmize out some space
 // #if PRODUCTION
-#define ensure(expr, msg) \
-  (((expr) == sectrue)    \
-       ? (void)0          \
-       : __fatal_error(#expr, msg, __FILE__, __LINE__, __func__))
+#define ensure(expr, msg) (((expr) == sectrue) ? (void)0 : __fatal_error(#expr, msg, __FILE__, __LINE__, __func__))
 // #else
 // #define ensure(expr, msg) (((expr) == sectrue) ? (void)0 :
 // dbgprintf_Wait("%s\n%s\n",#expr, msg)) #endif
 
-#define ensure_ex(expr, ret, msg) \
-  (((expr) == ret) ? (void)0      \
-                   : __fatal_error(#expr, msg, __FILE__, __LINE__, __func__))
+#define ensure_ex(expr, ret, msg) (((expr) == ret) ? (void)0 : __fatal_error(#expr, msg, __FILE__, __LINE__, __func__))
 
 void hal_delay(uint32_t ms);
 uint32_t hal_ticks_ms();
@@ -117,16 +119,16 @@ extern uint8_t HW_ENTROPY_DATA[HW_ENTROPY_LEN];
 
 // the following functions are defined in util.s
 
-void memset_reg(volatile void *start, volatile void *stop, uint32_t val);
+void memset_reg(volatile void* start, volatile void* stop, uint32_t val);
 void jump_to(uint32_t address);
 void jump_to_unprivileged(uint32_t address);
 void jump_to_with_flag(uint32_t address, uint32_t register_flag);
 void ensure_compatible_settings(void);
 
-bool check_all_ones(const void *data, int len);
+bool check_all_ones(const void* data, int len);
 
-bool check_all_zeros(const void *data, int len);
+bool check_all_zeros(const void* data, int len);
 
-int compare_str_version(const char *version1, const char *version2);
+int compare_str_version(const char* version1, const char* version2);
 
 #endif

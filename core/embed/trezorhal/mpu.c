@@ -150,6 +150,12 @@ void mpu_config_base() {
   }
 }
 
+/**
+ * @brief 配置引导加载程序的MPU区域
+ * 
+ * @param access 访问权限
+ * @param exec 执行权限
+ */
 void mpu_config_boardloader(secbool access, secbool exec) {
   MPU_Region_InitTypeDef mpu_init_struct = {0};
 

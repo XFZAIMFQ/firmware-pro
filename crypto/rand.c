@@ -39,7 +39,9 @@
 
 static uint32_t seed = 0;
 
-void random_reseed(const uint32_t value) { seed = value; }
+void random_reseed(const uint32_t value) { 
+  seed = value; 
+}
 
 uint32_t random32(void) {
   // Linear congruential generator from Numerical Recipes

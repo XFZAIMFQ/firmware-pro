@@ -40,29 +40,39 @@ V1_BOOTLOADER_KEYS = [
     )
 ]
 
+# Bootloader 公钥
 V2_BOARDLOADER_KEYS = [
     bytes.fromhex(key)
     for key in (
-        "57114f0aa669d2f837e040ab9bb51c00991209f84bfd7bf0f893676246fba24a",
-        "dcae8e37df5c246027c03aa951bd6ec6caa7ad32c166b1f548a4efcd88ca3ca5",
+        # TODO: 修改公钥
+        # "57114f0aa669d2f837e040ab9bb51c00991209f84bfd7bf0f893676246fba24a",
+        # "dcae8e37df5c246027c03aa951bd6ec6caa7ad32c166b1f548a4efcd88ca3ca5",
+        "db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d",
+        "2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12",
         "772912ab61d1dc4f9133325e57e146ab9fac17a4572c6fcdf355f80036100004",
     )
 ]
 
+# Bootloader dev 公钥
 V2_BOARDLOADER_DEV_KEYS = [
     bytes.fromhex(key)
     for key in (
-        "57114f0aa669d2f837e040ab9bb51c00991209f84bfd7bf0f893676246fba24a",
-        "dcae8e37df5c246027c03aa951bd6ec6caa7ad32c166b1f548a4efcd88ca3ca5",
+        # "57114f0aa669d2f837e040ab9bb51c00991209f84bfd7bf0f893676246fba24a",
+        # "dcae8e37df5c246027c03aa951bd6ec6caa7ad32c166b1f548a4efcd88ca3ca5",
+        "db995fe25169d141cab9bbba92baa01f9f2e1ece7df4cb2ac05190f37fcc1f9d",
+        "2152f8d19b791d24453242e15f2eab6cb7cffa7b6a5ed30097960e069881db12",
         "772912ab61d1dc4f9133325e57e146ab9fac17a4572c6fcdf355f80036100004",
     )
 ]
 
+# Firmware 公钥
 V2_BOOTLOADER_KEYS = [
     bytes.fromhex(key)
     for key in (
-        "57114f0aa669d2f837e040ab9bb51c00991209f84bfd7bf0f893676246fba24a",
-        "dcae8e37df5c246027c03aa951bd6ec6caa7ad32c166b1f548a4efcd88ca3ca5",
+        # "57114f0aa669d2f837e040ab9bb51c00991209f84bfd7bf0f893676246fba24a",
+        # "dcae8e37df5c246027c03aa951bd6ec6caa7ad32c166b1f548a4efcd88ca3ca5",
+        "e28a8970753332bd72fef413e6b0b2ef1b4aadda7aa2c141f233712a6876b351",
+        "d4eec1869fb1b8a4e817516ad5a931557cb56805c3eb16e8f3a803d647df7869",
         "772912ab61d1dc4f9133325e57e146ab9fac17a4572c6fcdf355f80036100004",
     )
 ]
@@ -146,29 +156,29 @@ VendorTrust = c.Transformed(c.BitStruct(
 
 
 VendorHeader = c.Struct(
-    "_start_offset" / c.Tell,
-    "magic" / c.Const(b"OKTV"),
-    "header_len" / c.Int32ul,
-    "expiry" / c.Int32ul,
-    "version" / c.Struct(
-        "major" / c.Int8ul,
-        "minor" / c.Int8ul,
+    "_start_offset" / c.Tell,   # 记录开始偏移
+    "magic" / c.Const(b"OKTV"), # 固定魔术字节
+    "header_len" / c.Int32ul,   # 头部长度
+    "expiry" / c.Int32ul,       # 过期时间
+    "version" / c.Struct(       # 版本号
+        "major" / c.Int8ul,     # - 主版本号
+        "minor" / c.Int8ul,     # - 次版本号
     ),
-    "sig_m" / c.Int8ul,
-    "sig_n" / c.Rebuild(c.Int8ul, c.len_(c.this.pubkeys)),
-    "trust" / VendorTrust,
-    "_reserved" / c.Padding(14),
-    "pubkeys" / c.Bytes(32)[c.this.sig_n],
-    "text" / c.Aligned(4, c.PascalString(c.Int8ul, "utf-8")),
-    "image" / Toif,
-    "_end_offset" / c.Tell,
+    "sig_m" / c.Int8ul,                                         # 最小签名数
+    "sig_n" / c.Rebuild(c.Int8ul, c.len_(c.this.pubkeys)),      # 公钥数量
+    "trust" / VendorTrust,                                      # 供应商信任设置
+    "_reserved" / c.Padding(14),                                # 保留字节
+    "pubkeys" / c.Bytes(32)[c.this.sig_n],                      # 公钥列表
+    "text" / c.Aligned(4, c.PascalString(c.Int8ul, "utf-8")),   # 供应商文本
+    "image" / Toif,                                             # 供应商图片
+    "_end_offset" / c.Tell,                                     # 记录结束偏移
 
-    "_min_header_len" / c.Check(c.this.header_len > (c.this._end_offset - c.this._start_offset) + 65),
-    "_header_len_aligned" / c.Check(c.this.header_len % 512 == 0),
+    "_min_header_len" / c.Check(c.this.header_len > (c.this._end_offset - c.this._start_offset) + 65),  # 头部长度检查
+    "_header_len_aligned" / c.Check(c.this.header_len % 512 == 0),                                      # 头部长度对齐检查
 
-    c.Padding(c.this.header_len - c.this._end_offset + c.this._start_offset - 65),
-    "sigmask" / c.Byte,
-    "signature" / c.Bytes(64),
+    c.Padding(c.this.header_len - c.this._end_offset + c.this._start_offset - 65),  # 填充到头部长度
+    "sigmask" / c.Byte,                                                             # 签名掩码
+    "signature" / c.Bytes(64),                                                      # 签名
 )
 
 
@@ -181,33 +191,33 @@ VersionLong = c.Struct(
 
 
 FirmwareHeader = c.Struct(
-    "_start_offset" / c.Tell,
-    "magic" / EnumAdapter(c.Bytes(4), HeaderType),
-    "header_len" / c.Int32ul,
-    "expiry" / c.Int32ul,
-    "code_length" / c.Rebuild(
-        c.Int32ul,
+    "_start_offset" / c.Tell,                       # 记录开始偏移
+    "magic" / EnumAdapter(c.Bytes(4), HeaderType),  # 固定魔术字节
+    "header_len" / c.Int32ul,                       # 头部长度
+    "expiry" / c.Int32ul,                           # 过期时间
+    "code_length" / c.Rebuild(                      # 代码长度
+        c.Int32ul,                                  # - 32位无符号整数
         lambda this:
             len(this._.code) if "code" in this._
             else (this.code_length or 0)
     ),
-    "version" / VersionLong,
-    "fix_version" / VersionLong,
-    "onekey_version" / VersionLong,
-    "hash_block" / c.Int32ul,
-    "hashes" / c.Bytes(32)[16],    
+    "version" / VersionLong,                        # 版本号
+    "fix_version" / VersionLong,                    # 固件修复版本号
+    "onekey_version" / VersionLong,                 # onekey版本号
+    "hash_block" / c.Int32ul,                       # 哈希块大小
+    "hashes" / c.Bytes(32)[16],                     # 代码块哈希列表
 
-    "v1_signatures" / c.Bytes(64)[V1_SIGNATURE_SLOTS],
-    "v1_key_indexes" / c.Int8ul[V1_SIGNATURE_SLOTS],  # pylint: disable=E1136
+    "v1_signatures" / c.Bytes(64)[V1_SIGNATURE_SLOTS],  # V1签名列表
+    "v1_key_indexes" / c.Int8ul[V1_SIGNATURE_SLOTS],    # pylint: disable=E1136
 
-    "_reserved" / c.Padding(204),
-    "build_id" / c.Bytes(16),
-    "sigmask" / c.Byte,
-    "signature" / c.Bytes(64),
+    "_reserved" / c.Padding(204),                       # 保留字节
+    "build_id" / c.Bytes(16),                           # 构建ID
+    "sigmask" / c.Byte,                                 # 签名掩码
+    "signature" / c.Bytes(64),                          # 签名
 
-    "_end_offset" / c.Tell,
+    "_end_offset" / c.Tell,                            # 记录结束偏移
 
-    "_rebuild_header_len" / c.If(
+    "_rebuild_header_len" / c.If(                      # 头部长度重建检查
         c.this.version.major > 1,
         c.Pointer(
             c.this._start_offset + 4,
@@ -328,17 +338,17 @@ def check_sig_v1(
 
 
 def header_digest(header: c.Container, hash_function: Callable = blake2s) -> bytes:
-    stripped_header = header.copy()
-    stripped_header.sigmask = 0
-    stripped_header.signature = b"\0" * 64
-    stripped_header.v1_key_indexes = [0, 0, 0]
-    stripped_header.v1_signatures = [b"\0" * 64] * 3
-    if header.magic == b"OKTV":
-        header_type = VendorHeader
+    stripped_header = header.copy() # 复制头部
+    stripped_header.sigmask = 0 # 清除签名掩码
+    stripped_header.signature = b"\0" * 64 # 清除签名
+    stripped_header.v1_key_indexes = [0, 0, 0] # 清除v1_key_indexes
+    stripped_header.v1_signatures = [b"\0" * 64] * 3 # 清除v1_signatures
+    if header.magic == b"OKTV": # 如果是供应商头
+        header_type = VendorHeader # 使用供应商头类型
     else:
-        header_type = FirmwareHeader
-    header_bytes = header_type.build(stripped_header)
-    return hash_function(header_bytes).digest()
+        header_type = FirmwareHeader # 否则使用固件头类型
+    header_bytes = header_type.build(stripped_header) # 构建头部字节
+    return hash_function(header_bytes).digest() # 返回头部的哈希值
 
 
 def digest_v2(fw: c.Container) -> bytes:

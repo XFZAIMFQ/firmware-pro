@@ -56,6 +56,12 @@ class ImageType(Enum):
 
 
 def _make_dev_keys(*key_bytes: bytes) -> List[bytes]:
+    """
+    通过重复给定的字节32次来创建开发公钥.
+
+    :return: 开发公钥列表
+    :rtype: List[bytes]
+    """
     return [k * 32 for k in key_bytes]
 
 
@@ -319,8 +325,13 @@ class FirmwareImage(BinImage):
 
     def __init__(self, fw: c.Container) -> None:
         super().__init__(fw)
-        self.public_keys = fw.vendor_header.pubkeys
-        self.sigs_required = fw.vendor_header.sig_m
+        self.public_keys = fw.vendor_header.pubkeys # 从供应商头中提取公钥
+        self.sigs_required = fw.vendor_header.sig_m # 从供应商头中提取所需签名数
+
+        print("firmware public keys:",[sk.hex() for sk in self.public_keys])
+        print("firmware sigs required:", self.sigs_required)
+        print("firmware dev keys:",[sk.hex() for sk in self.DEV_KEYS])
+        print("firmware vendor header sigs required:", fw.vendor_header.sig_m)
 
     def check_signature(self) -> Status:
         vhash = compute_vhash(self.fw.vendor_header)

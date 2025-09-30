@@ -16,10 +16,12 @@
 #define LCD_BL_CTRL_GPIO_PORT GPIOK
 
 /* LCD reset pin */
+// LCD 复位引脚
 #define LCD_RESET_PIN GPIO_PIN_3
 #define LCD_RESET_GPIO_PORT GPIOG
 
 /* LCD tearing effect pin */
+// LCD 撕裂检测引脚
 #define LCD_TE_PIN GPIO_PIN_2
 #define LCD_TE_GPIO_PORT GPIOJ
 
@@ -75,8 +77,7 @@ void lcd_refresh_resume(void);
 
 int lcd_ltdc_busy(void);
 
-void display_fp(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
-                const uint8_t *data);
+void display_fp(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t *data);
 
 void fb_write_pixel(uint32_t x_pos, uint32_t y_pos, uint32_t color);
 void fb_fill_rect(uint32_t x_pos, uint32_t y_pos, uint32_t width,

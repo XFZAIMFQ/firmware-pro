@@ -7,11 +7,20 @@ from trezorlib import firmware
 
 
 def minimum_header_len(spec):
-    spec = spec.copy()
-    spec["header_len"] = 512000
-    reparsed = firmware.VendorHeader.parse(firmware.VendorHeader.build(spec))
-    data_length = reparsed._end_offset - reparsed._start_offset
+    """
+    计算给定规格的最小允许长度。
+
+    :param spec: 规格字典
+    :type spec: dict
+    :return: 最小允许长度
+    :rtype: int
+    """
+    spec = spec.copy()                                                          # 创建规格的副本以避免修改原始数据
+    spec["header_len"] = 512000                                                 # 设置一个大头长度以确保完整构建
+    reparsed = firmware.VendorHeader.parse(firmware.VendorHeader.build(spec))   # 构建并重新解析头
+    data_length = reparsed._end_offset - reparsed._start_offset                 # 计算数据长度
     # data length + 65 for signatures, rounded up to nearest multiple of 512
+    # 数据长度加上65以用于签名，并向上取整至最接近的512的倍数.
     return (data_length + 65 + 511) // 512 * 512
 
 
@@ -20,25 +29,37 @@ def minimum_header_len(spec):
 @click.argument("image", type=click.File("rb"))
 @click.argument("outfile", type=click.File("wb"))
 def build_vendorheader(specfile, image, outfile):
-    spec = json.load(specfile)
-    spec["pubkeys"] = [bytes.fromhex(k) for k in spec["pubkeys"]]
-    spec["image"] = firmware.Toif.parse(image.read())
-    spec["sigmask"] = 0
-    spec["signature"] = b"\x00" * 64
+    """
+    根据SPECFILE和IMAGE构建供应商头,并将结果写入OUTFILE.
 
-    min_length = minimum_header_len(spec)
-    if "header_len" not in spec:
-        spec["header_len"] = min_length
-    elif spec["header_len"] < min_length:
-        raise click.ClickException(
+    :param specfile: 规格文件
+    :type specfile: TextIO
+    :param image: 固件镜像文件
+    :type image: BinaryIO
+    :param outfile: 输出文件
+    :type outfile: BinaryIO
+    :raises click.ClickException: 如果发生错误
+    :raises click.ClickException: 如果发生错误
+    """
+    spec = json.load(specfile)                                      # 读取json文件
+    spec["pubkeys"] = [bytes.fromhex(k) for k in spec["pubkeys"]]   # 将公钥字符串转换为字节
+    spec["image"] = firmware.Toif.parse(image.read())               # 读取固件镜像文件并解析
+    spec["sigmask"] = 0                                             # 设置签名掩码为0
+    spec["signature"] = b"\x00" * 64                                # 初始化签名为64个零字节
+
+    min_length = minimum_header_len(spec)                           # 计算最小头长度
+    if "header_len" not in spec:                                    # 如果头长度未指定
+        spec["header_len"] = min_length                             # 设置为最小长度
+    elif spec["header_len"] < min_length:                           # 如果指定的头长度小于最小长度
+        raise click.ClickException(                                 # 抛出异常
             f"Specified header_len {spec['header_len']} too low. "
             f"Minimum allowable value is {min_length}."
         )
 
-    if spec["header_len"] % 512 != 0:
-        raise click.ClickException("Invalid header_len: must be a multiple of 512")
+    if spec["header_len"] % 512 != 0:                               # 如果头长度不是512的倍数
+        raise click.ClickException("Invalid header_len: must be a multiple of 512") 
 
-    outfile.write(firmware.VendorHeader.build(spec))
+    outfile.write(firmware.VendorHeader.build(spec))                # 构建并写入供应商头
 
 
 if __name__ == "__main__":

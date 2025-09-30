@@ -48,16 +48,16 @@
 
 // helper macros
 #define _TO_STR(x) #x
-#define TO_STR(x) _TO_STR(x)
+#define TO_STR(x)  _TO_STR(x)
 
 // defines
-#define VERSION_STR \
-  TO_STR(VERSION_MAJOR) "." TO_STR(VERSION_MINOR) "." TO_STR(VERSION_PATCH)
-#define PIXEL_STEP 5
+#define VERSION_STR TO_STR(VERSION_MAJOR) "." TO_STR(VERSION_MINOR) "." TO_STR(VERSION_PATCH)
+#define PIXEL_STEP  5
 
-typedef struct {
-  char version[16];
-  char build_id[16];
+typedef struct
+{
+    char version[16];
+    char build_id[16];
 } board_info_t;
 
 const board_info_t board_info __attribute__((section(".version_section"))) = {
@@ -92,68 +92,70 @@ static const uint8_t toi_icon_safeos[] = {
 extern volatile uint32_t system_reset;
 
 // axi ram 512k
-uint8_t *boardloader_buf = (uint8_t *)0x24000000;
+uint8_t* boardloader_buf = (uint8_t*)0x24000000;
 
-// this is mainly for ignore/supress faults during flash read (for check
-// purpose). if bus fault enabled, it will catched by BusFault_Handler, then we
-// could ignore it. if bus fault disabled, it will elevate to hard fault, this
-// is not what we want
+// this is mainly for ignore/supress faults during flash read (for check purpose). if bus fault enabled, it will catched
+// by BusFault_Handler, then we could ignore it. if bus fault disabled, it will elevate to hard fault, this is not what
+// we want
 static secbool handle_flash_ecc_error = secfalse;
 static inline void set_handle_flash_ecc_error(secbool val) {
-  handle_flash_ecc_error = val;
+    handle_flash_ecc_error = val;
 }
 
 // fault handlers
 void HardFault_Handler(void) {
-  error_shutdown("Internal error", "(HF)", NULL, NULL);
+    error_shutdown("Internal error", "(HF)", NULL, NULL);
 }
 
 void MemManage_Handler_MM(void) {
-  error_shutdown("Internal error", "(MM)", NULL, NULL);
+    error_shutdown("Internal error", "(MM)", NULL, NULL);
 }
 
 void MemManage_Handler_SO(void) {
-  error_shutdown("Internal error", "(SO)", NULL, NULL);
+    error_shutdown("Internal error", "(SO)", NULL, NULL);
 }
 
 void BusFault_Handler(void) {
-  // if want handle flash ecc error
-  if (handle_flash_ecc_error == sectrue) {
-    // dbgprintf_Wait("Internal flash ECC error detected at 0x%X", SCB->BFAR);
+    // if want handle flash ecc error
+    if ( handle_flash_ecc_error == sectrue ) {
+        // dbgprintf_Wait("Internal flash ECC error detected at 0x%X", SCB->BFAR);
 
-    // check if it's triggered by flash DECC
-    if (flash_check_ecc_fault()) {
-      // reset flash controller error flags
-      flash_clear_ecc_fault(SCB->BFAR);
+        // check if it's triggered by flash DECC
+        if ( flash_check_ecc_fault() ) {
+            // reset flash controller error flags
+            flash_clear_ecc_fault(SCB->BFAR);
 
-      // reset bus fault error flags
-      SCB->CFSR &= ~(SCB_CFSR_BFARVALID_Msk | SCB_CFSR_PRECISERR_Msk);
-      __DSB();
-      SCB->SHCSR &= ~(SCB_SHCSR_BUSFAULTACT_Msk);
-      __DSB();
+            // reset bus fault error flags
+            SCB->CFSR &= ~(SCB_CFSR_BFARVALID_Msk | SCB_CFSR_PRECISERR_Msk);
+            __DSB();
+            SCB->SHCSR &= ~(SCB_SHCSR_BUSFAULTACT_Msk);
+            __DSB();
 
-      // try to fix ecc error and reboot
-      if (flash_fix_ecc_fault_BOOTLOADER(SCB->BFAR)) {
-        error_shutdown("Internal flash ECC error", "Cleanup successful",
-                       "Bootloader reinstall may required",
-                       "If the issue persists, contact support.");
-      } else {
-        error_shutdown("Internal error", "Cleanup failed",
-                       "Reboot to try again",
-                       "If the issue persists, contact support.");
-      }
+            // try to fix ecc error and reboot
+            if ( flash_fix_ecc_fault_BOOTLOADER(SCB->BFAR) ) {
+                error_shutdown(
+                    "Internal flash ECC error",
+                    "Cleanup successful",
+                    "Bootloader reinstall may required",
+                    "If the issue persists, contact support."
+                );
+            } else {
+                error_shutdown(
+                    "Internal error", "Cleanup failed", "Reboot to try again", "If the issue persists, contact support."
+                );
+            }
+        }
     }
-  }
 
-  // normal route
-  error_shutdown("Internal error", "(BF)", NULL, NULL);
+    // normal route
+    error_shutdown("Internal error", "(BF)", NULL, NULL);
 }
 
 void UsageFault_Handler(void) {
-  error_shutdown("Internal error", "(UF)", NULL, NULL);
+    error_shutdown("Internal error", "(UF)", NULL, NULL);
 }
 
-const char *const STAY_REASON_str[] = {
+const char* const STAY_REASON_str[] = {
     ENUM_NAME_ARRAY_ITEM(STAY_REASON_NONE),
     ENUM_NAME_ARRAY_ITEM(STAY_REASON_REQUIRED_BY_FLAG),
     ENUM_NAME_ARRAY_ITEM(STAY_REASON_MANUAL_OVERRIDE),
@@ -162,232 +164,265 @@ const char *const STAY_REASON_str[] = {
     ENUM_NAME_ARRAY_ITEM(STAY_REASON_UPDATE_NEXT_TARGET),
     ENUM_NAME_ARRAY_ITEM(STAY_REASON_UNKNOWN),
 };
-static inline void display_boardloader_title(char *message,
-                                             STAY_REASON stay_reason) {
-  if ((stay_reason < STAY_REASON_NONE) || (stay_reason > STAY_REASON_UNKNOWN))
-    stay_reason = STAY_REASON_UNKNOWN;
-  display_backlight(255);
-  display_clear();
-  display_printf("OneKey Boardloader " VERSION_STR "\n");
-  display_printf("---------------------------------------\n");
-  display_printf("%s\n", STAY_REASON_str[stay_reason]);
-  display_printf("---------------------------------------\n");
-  display_print(message, -1);
+
+/**
+ * @brief 显示 Boardloader 标题和信息
+ *
+ * @param message
+ * @param stay_reason
+ */
+static inline void display_boardloader_title(char* message, STAY_REASON stay_reason) {
+    if ( (stay_reason < STAY_REASON_NONE) || (stay_reason > STAY_REASON_UNKNOWN) )
+        stay_reason = STAY_REASON_UNKNOWN;
+    display_backlight(255);
+    display_clear();
+    display_printf("OneKey Boardloader " VERSION_STR "\n");
+    display_printf("---------------------------------------\n");
+    display_printf("%s\n", STAY_REASON_str[stay_reason]);
+    display_printf("---------------------------------------\n");
+    display_print(message, -1);
 }
 
+/**
+ * @brief 显示开机进度条
+ */
 void show_poweron_bar(void) {
-  static bool forward = true;
-  static uint32_t step = 0, location = 0, indicator = 0;
+    static bool forward = true;
+    static uint32_t step = 0, location = 0, indicator = 0;
 
-  if (forward) {
-    step += PIXEL_STEP;
-    if (step <= 90) {
-      indicator += PIXEL_STEP;
-    } else if (step <= 160) {
-      location += PIXEL_STEP;
-    } else if (step < 250) {
-      location += PIXEL_STEP;
-      indicator -= PIXEL_STEP;
+    if ( forward ) {
+        step += PIXEL_STEP;
+        if ( step <= 90 ) {
+            indicator += PIXEL_STEP;
+        } else if ( step <= 160 ) {
+            location += PIXEL_STEP;
+        } else if ( step < 250 ) {
+            location += PIXEL_STEP;
+            indicator -= PIXEL_STEP;
+        } else {
+            forward = false;
+        }
     } else {
-      forward = false;
+        step -= PIXEL_STEP;
+        if ( step > 160 ) {
+            location -= PIXEL_STEP;
+            indicator += PIXEL_STEP;
+        } else if ( step > 90 ) {
+            location -= PIXEL_STEP;
+        } else if ( step > 0 ) {
+            indicator -= PIXEL_STEP;
+        } else {
+            forward = true;
+        }
     }
-  } else {
-    step -= PIXEL_STEP;
-    if (step > 160) {
-      location -= PIXEL_STEP;
-      indicator += PIXEL_STEP;
-    } else if (step > 90) {
-      location -= PIXEL_STEP;
-    } else if (step > 0) {
-      indicator -= PIXEL_STEP;
-    } else {
-      forward = true;
-    }
-  }
 
-  display_bar_radius(160, 352, 160, 4, COLOR_DARK, COLOR_BLACK, 2);
-  display_bar_radius(160 + location, 352, indicator, 4, COLOR_WHITE,
-                     COLOR_BLACK, 2);
+    display_bar_radius(160, 352, 160, 4, COLOR_DARK, COLOR_BLACK, 2);
+    display_bar_radius(160 + location, 352, indicator, 4, COLOR_WHITE, COLOR_BLACK, 2);
 }
 
+/**
+ * @brief bootloader 更新回调
+ *
+ * @param pos
+ */
 static void bootloader_update_cb(int pos) {
-  // pass pos=-1 to reset last_pos is acceptable
-  // since only 0-100 will be printed
-  static int last_pos = -1;
+    // pass pos=-1 to reset last_pos is acceptable
+    // since only 0-100 will be printed
+    static int last_pos = -1;
 
-  if (pos != last_pos) {
-    if (pos >= 0 && pos <= 100) {
-      display_printf("\rProgress: %u%%", pos);
+    if ( pos != last_pos ) {
+        if ( pos >= 0 && pos <= 100 ) {
+            display_printf("\rProgress: %u%%", pos);
+        }
+        last_pos = pos;
     }
-    last_pos = pos;
-  }
 }
 
+/**
+ * @brief 尝试更新 bootloader
+ *
+ * @param do_update 是否实际执行更新
+ * @param auto_reboot 更新完成后是否自动重启
+ * @return secbool 更新文件存在且有效返回 sectrue，否则返回 secfalse
+ */
 static secbool try_bootloader_update(bool do_update, bool auto_reboot) {
-  memzero(boardloader_buf, BOOTLOADER_IMAGE_MAXSIZE);
+    memzero(boardloader_buf, BOOTLOADER_IMAGE_MAXSIZE);
 
-  // read file
-  char new_bootloader_path_legacy[] = "0:boot/bootloader.bin";
-  char new_bootloader_path[] = "0:updates/bootloader.bin";
+    // read file
+    // 读取文件
+    char new_bootloader_path_legacy[] = "0:boot/bootloader.bin";
+    char new_bootloader_path[] = "0:updates/bootloader.bin";
 
-  char *new_bootloader_path_p = NULL;
+    char* new_bootloader_path_p = NULL;
 
-  // check file exists
-  if (emmc_fs_path_exist(new_bootloader_path)) {
-    new_bootloader_path_p = new_bootloader_path;
-  } else if (emmc_fs_path_exist(new_bootloader_path_legacy)) {
-    new_bootloader_path_p = new_bootloader_path_legacy;
-  }
-  if (new_bootloader_path_p == NULL) return secfalse;
+    // check file exists
+    // 检查文件是否存在
+    if ( emmc_fs_path_exist(new_bootloader_path) ) {
+        new_bootloader_path_p = new_bootloader_path;
+    } else if ( emmc_fs_path_exist(new_bootloader_path_legacy) ) {
+        new_bootloader_path_p = new_bootloader_path_legacy;
+    }
+    if ( new_bootloader_path_p == NULL )
+        return secfalse;
 
-  // check file size
-  EMMC_PATH_INFO file_info;
-  if (!emmc_fs_path_info(new_bootloader_path_p, &file_info)) return secfalse;
-  if (file_info.size > BOOTLOADER_IMAGE_MAXSIZE) return secfalse;
+    // check file size
+    // 检查文件大小
+    EMMC_PATH_INFO file_info;
+    if ( !emmc_fs_path_info(new_bootloader_path_p, &file_info) )
+        return secfalse;
+    if ( file_info.size > BOOTLOADER_IMAGE_MAXSIZE )
+        return secfalse;
 
-  // read file to buffer
-  uint32_t num_of_read = 0;
-  if (!emmc_fs_file_read(new_bootloader_path_p, 0, boardloader_buf,
-                         file_info.size, &num_of_read))
-    return secfalse;
+    // read file to buffer
+    // 读取文件到缓冲区
+    uint32_t num_of_read = 0;
+    if ( !emmc_fs_file_read(new_bootloader_path_p, 0, boardloader_buf, file_info.size, &num_of_read) )
+        return secfalse;
 
-  // check read size matchs file size
-  if (num_of_read != file_info.size) return secfalse;
+    // check read size matchs file size
+    // 检查读取大小是否与文件大小匹配
+    if ( num_of_read != file_info.size )
+        return secfalse;
 
-  // validate new bootloader
-  image_header file_hdr;
+    // validate new bootloader
+    // 验证新的bootloader
+    image_header file_hdr;
 
-  if (sectrue != load_image_header(boardloader_buf, BOOTLOADER_IMAGE_MAGIC,
-                                   BOOTLOADER_IMAGE_MAXSIZE, FW_KEY_M, FW_KEY_N,
-                                   FW_KEYS, &file_hdr))
-    return secfalse;
+    if ( sectrue !=
+         load_image_header(
+             boardloader_buf, BOOTLOADER_IMAGE_MAGIC, BOOTLOADER_IMAGE_MAXSIZE, FW_KEY_M, FW_KEY_N, FW_KEYS, &file_hdr
+         ) )
+        return secfalse;
 
-  if (sectrue != check_image_contents_ADV(NULL, &file_hdr,
-                                          boardloader_buf + file_hdr.hdrlen, 0,
-                                          file_hdr.codelen, true))
-    return secfalse;
+    if ( sectrue !=
+         check_image_contents_ADV(NULL, &file_hdr, boardloader_buf + file_hdr.hdrlen, 0, file_hdr.codelen, true) )
+        return secfalse;
 
-  // check header stated size matchs file size
-  if ((file_hdr.hdrlen + file_hdr.codelen) != file_info.size) return secfalse;
+    // check header stated size matchs file size
+    // 检查标头中声明的大小是否与文件大小一致。
+    if ( (file_hdr.hdrlen + file_hdr.codelen) != file_info.size )
+        return secfalse;
 
-  // if not actually doing the update, return as update file validate result
-  if (!do_update) return sectrue;
+    // if not actually doing the update, return as update file validate result
+    // 如果实际上并未执行更新，请返回更新文件验证结果。
+    if ( !do_update )
+        return sectrue;
 
-  // validate current bootloader
-  image_header flash_hdr;
-  secbool flash_hdr_valid = secfalse;
-  // secbool code_valid = secfalse;
-  FORCE_IGNORE_RETURN(
-      verify_bootloader(&flash_hdr, &flash_hdr_valid, NULL, NULL, 0));
+    // validate current bootloader
+    image_header flash_hdr;
+    secbool flash_hdr_valid = secfalse;
+    // secbool code_valid = secfalse;
+    FORCE_IGNORE_RETURN(verify_bootloader(&flash_hdr, &flash_hdr_valid, NULL, NULL, 0));
 
 #if PRODUCTION
-  // handle downgrade or invalid bootloader
-  if (flash_hdr_valid == sectrue) {
-    if (memcmp(&file_hdr.version, &flash_hdr.version, 4) < 0) {
-      return secfalse;
+    // handle downgrade or invalid bootloader
+    // 处理降级或无效的引导加载程序
+    if ( flash_hdr_valid == sectrue ) {
+        if ( memcmp(&file_hdr.version, &flash_hdr.version, 4) < 0 ) {
+            return secfalse;
+        }
     }
-  }
 #endif
 
-  // update process
-  display_boardloader_title("Bootloader Update\n",
-                            STAY_REASON_UPDATE_NEXT_TARGET);
-  display_printf("!!! DO NOT POWER OFF !!!\n");
-  display_printf("\r\n");
+    // update process
+    display_boardloader_title("Bootloader Update\n", STAY_REASON_UPDATE_NEXT_TARGET);
+    display_printf("!!! DO NOT POWER OFF !!!\n");
+    display_printf("\r\n");
 
-  char err_msg[64];
+    char err_msg[64];
 
-  // install bootloader
-  if (sectrue != install_bootloader(boardloader_buf, file_info.size, err_msg,
-                                    sizeof(err_msg), NULL,
-                                    bootloader_update_cb)) {
-    display_printf("Install error! Bootloader will be erased!\n");
-    display_printf("Detail: %s", err_msg);
-    FORCE_IGNORE_RETURN(flash_erase_sectors(BOOTLOADER_SECTORS,
-                                            BOOTLOADER_SECTORS_COUNT, NULL));
-    return secfalse;
-  }
-  display_printf("\n");
-
-  // verify new bootloader
-  if (sectrue !=
-      verify_bootloader(NULL, NULL, NULL, err_msg, sizeof(err_msg))) {
-    // if not valid, erase anyways
-    display_printf("\n");
-    display_printf("Verify error! Bootloader will be erased!\n");
-    display_printf("Detail: %s\n", err_msg);
-    FORCE_IGNORE_RETURN(flash_erase_sectors(BOOTLOADER_SECTORS,
-                                            BOOTLOADER_SECTORS_COUNT, NULL));
-    return secfalse;
-  }
-  display_printf("\n");
-
-  // remove file
-  display_printf("\rRemoving Payload: ");
-  if (!emmc_fs_file_delete(new_bootloader_path_p))
-    display_printf(" fail\n");
-  else
-    display_printf(" done\n");
-
-  // reboot
-  if (auto_reboot) {
-    for (int i = 3; i >= 0; i--) {
-      display_printf("\rRestarting in %d second(s)", i);
-      hal_delay(1000);
+    // install bootloader
+    // 安装 bootloader
+    if ( sectrue !=
+         install_bootloader(boardloader_buf, file_info.size, err_msg, sizeof(err_msg), NULL, bootloader_update_cb) ) {
+        display_printf("Install error! Bootloader will be erased!\n");
+        display_printf("Detail: %s", err_msg);
+        FORCE_IGNORE_RETURN(flash_erase_sectors(BOOTLOADER_SECTORS, BOOTLOADER_SECTORS_COUNT, NULL));
+        return secfalse;
     }
+    display_printf("\n");
 
-    restart();
-  }
-  return sectrue;
+    // verify new bootloader
+    // 验证新的 bootloader
+    if ( sectrue != verify_bootloader(NULL, NULL, NULL, err_msg, sizeof(err_msg)) ) {
+        // if not valid, erase anyways
+        display_printf("\n");
+        display_printf("Verify error! Bootloader will be erased!\n");
+        display_printf("Detail: %s\n", err_msg);
+        FORCE_IGNORE_RETURN(flash_erase_sectors(BOOTLOADER_SECTORS, BOOTLOADER_SECTORS_COUNT, NULL));
+        return secfalse;
+    }
+    display_printf("\n");
+
+    // remove file
+    // 移除文件
+    display_printf("\rRemoving Payload: ");
+    if ( !emmc_fs_file_delete(new_bootloader_path_p) )
+        display_printf(" fail\n");
+    else
+        display_printf(" done\n");
+
+    // reboot
+    // 重启
+    if ( auto_reboot ) {
+        for ( int i = 3; i >= 0; i-- ) {
+            display_printf("\rRestarting in %d second(s)", i);
+            hal_delay(1000);
+        }
+
+        restart();
+    }
+    return sectrue;
 }
 
-typedef enum {
-  // C = center
-  // T = top
-  // L = left
-  TOUCH_AREA_OTHER = 0,  //
-  TOUCH_AREA_C,          //
-  TOUCH_AREA_TL,         //
-  TOUCH_AREA_TR,         //
-  TOUCH_AREA_BL,         //
-  TOUCH_AREA_BR,         //
+typedef enum
+{
+    // C = center
+    // T = top
+    // L = left
+    TOUCH_AREA_OTHER = 0, // 区外
+    TOUCH_AREA_C,         // 中心
+    TOUCH_AREA_TL,        // 左上
+    TOUCH_AREA_TR,        // 右上
+    TOUCH_AREA_BL,        // 左下
+    TOUCH_AREA_BR,        // 右下
 } TOUCH_AREA;
 
-const char *TOUCH_AREA_str[] = {
-    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_OTHER),  //
-    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_C),      //
-    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_TL),     //
-    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_TR),     //
-    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_BL),     //
-    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_BR),     //
+const char* TOUCH_AREA_str[] = {
+    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_OTHER),
+    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_C),
+    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_TL),
+    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_TR),
+    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_BL),
+    ENUM_NAME_ARRAY_ITEM(TOUCH_AREA_BR),
 };
 
 static const uint16_t touch_area_block_size = 50;
 static TOUCH_AREA touch_pos_to_area(uint16_t x, uint16_t y) {
-  if (x < 0 || x > MAX_DISPLAY_RESX) return TOUCH_AREA_OTHER;
-  if (x < 0 || x > MAX_DISPLAY_RESY) return TOUCH_AREA_OTHER;
+    if ( x < 0 || x > MAX_DISPLAY_RESX )
+        return TOUCH_AREA_OTHER;
+    if ( x < 0 || x > MAX_DISPLAY_RESY )
+        return TOUCH_AREA_OTHER;
 
-  if (x <= touch_area_block_size && y <= touch_area_block_size)
-    return TOUCH_AREA_TL;
-  if (x >= MAX_DISPLAY_RESX - touch_area_block_size &&
-      y <= touch_area_block_size)
-    return TOUCH_AREA_TR;
+    if ( x <= touch_area_block_size && y <= touch_area_block_size )
+        return TOUCH_AREA_TL;
+    if ( x >= MAX_DISPLAY_RESX - touch_area_block_size && y <= touch_area_block_size )
+        return TOUCH_AREA_TR;
 
-  if (x <= touch_area_block_size &&
-      y >= MAX_DISPLAY_RESY - touch_area_block_size)
-    return TOUCH_AREA_BL;
-  if (x >= MAX_DISPLAY_RESX - touch_area_block_size &&
-      y >= MAX_DISPLAY_RESY - touch_area_block_size)
-    return TOUCH_AREA_BR;
+    if ( x <= touch_area_block_size && y >= MAX_DISPLAY_RESY - touch_area_block_size )
+        return TOUCH_AREA_BL;
+    if ( x >= MAX_DISPLAY_RESX - touch_area_block_size && y >= MAX_DISPLAY_RESY - touch_area_block_size )
+        return TOUCH_AREA_BR;
 
-  if ((x >= (MAX_DISPLAY_RESX / 2 - (touch_area_block_size / 2)) &&
-       x <= (MAX_DISPLAY_RESX / 2 + (touch_area_block_size / 2))) &&
-      (y >= (MAX_DISPLAY_RESY / 2 - (touch_area_block_size / 2)) &&
-       y <= (MAX_DISPLAY_RESY / 2 + (touch_area_block_size / 2))))
-    return TOUCH_AREA_C;
+    if ( (x >= (MAX_DISPLAY_RESX / 2 - (touch_area_block_size / 2)) &&
+          x <= (MAX_DISPLAY_RESX / 2 + (touch_area_block_size / 2))) &&
+         (y >= (MAX_DISPLAY_RESY / 2 - (touch_area_block_size / 2)) &&
+          y <= (MAX_DISPLAY_RESY / 2 + (touch_area_block_size / 2))) )
+        return TOUCH_AREA_C;
 
-  return TOUCH_AREA_OTHER;
+    return TOUCH_AREA_OTHER;
 }
+
 #if false
 // testing and calibrating purpose functions
 static void touch_area_display()
@@ -477,278 +512,308 @@ static void touch_area_test()
 }
 #endif
 
-static BOOT_TARGET decide_boot_target(STAY_REASON *stay_reason,
-                                      image_header *const hdr,
-                                      secbool *hdr_valid, secbool *code_valid) {
-  // get boot target flag
-  BOOT_TARGET boot_target = *BOOT_TARGET_FLAG_ADDR;  // cache flag
-  *BOOT_TARGET_FLAG_ADDR = BOOT_TARGET_NORMAL;       // consume(reset) flag
+/**
+ * @brief 确定启动目标
+ *
+ * @param stay_reason   保持在当前级别的原因
+ * @param hdr           镜像头部
+ * @param hdr_valid     镜像有效标志
+ * @param code_valid    代码有效标志
+ * @return BOOT_TARGET  启动的目标
+ */
+static BOOT_TARGET
+decide_boot_target(STAY_REASON* stay_reason, image_header* const hdr, secbool* hdr_valid, secbool* code_valid) {
+    // get boot target flag
+    BOOT_TARGET boot_target = *BOOT_TARGET_FLAG_ADDR; // cache flag             缓存标志
+    *BOOT_TARGET_FLAG_ADDR = BOOT_TARGET_NORMAL;      // consume(reset) flag    重置标志
 
-  // handle stay reason
-  STAY_REASON dummy_stay_reason;
-  if (stay_reason == NULL) {
-    stay_reason = &dummy_stay_reason;
-  }
-  *stay_reason = STAY_REASON_NONE;
+    // handle stay reason
+    STAY_REASON dummy_stay_reason;
+    if ( stay_reason == NULL ) {
+        stay_reason = &dummy_stay_reason;
+    }
+    *stay_reason = STAY_REASON_NONE;
 
-  // if boot target already set to this level, no more checks
-  if (boot_target == BOOT_TARGET_BOARDLOADER) {
-    *stay_reason = STAY_REASON_REQUIRED_BY_FLAG;
-    return boot_target;
-  }
-
-  // check manual overrides
-  uint32_t touch_data = 0;
-  uint16_t touch_start_pos[2] = {0, 0};  // {x,y}
-  uint16_t touch_move_pos[2] = {0, 0};   // {x,y}
-  uint16_t touch_end_pos[2] = {0, 0};    // {x,y}
-  TOUCH_AREA ta_start = TOUCH_AREA_OTHER;
-  TOUCH_AREA ta_end = TOUCH_AREA_OTHER;
-  bool touch_center_cross = false;
-
-  for (int timer = 0; timer < 1600; timer++) {
-    // display bar
-    if (timer % 8 == 0) {
-      show_poweron_bar();
+    // if boot target already set to this level, no more checks
+    // 如果启动目标已经被设置为 Boardloader，则不再检查
+    if ( boot_target == BOOT_TARGET_BOARDLOADER ) {
+        *stay_reason = STAY_REASON_REQUIRED_BY_FLAG;
+        return boot_target;
     }
 
-    // pull touch screen
-    touch_data = touch_read();
-    if (touch_data != 0) {
-      if (touch_data & TOUCH_START) {
-        // reset on new touch event
-        touch_center_cross = false;
-        ta_start = TOUCH_AREA_OTHER;
-        ta_end = TOUCH_AREA_OTHER;
+    // check manual overrides
+    uint32_t touch_data = 0;
+    uint16_t touch_start_pos[2] = {0, 0}; // {x,y}
+    uint16_t touch_move_pos[2] = {0, 0};  // {x,y}
+    uint16_t touch_end_pos[2] = {0, 0};   // {x,y}
+    TOUCH_AREA ta_start = TOUCH_AREA_OTHER;
+    TOUCH_AREA ta_end = TOUCH_AREA_OTHER;
+    bool touch_center_cross = false;
 
-        touch_start_pos[0] = (touch_data >> 12) & 0xFFF;
-        touch_start_pos[1] = (touch_data >> 0) & 0xFFF;
+    for ( int timer = 0; timer < 1600; timer++ ) {
+        // display bar
+        if ( timer % 8 == 0 ) {
+            show_poweron_bar();
+        }
 
-        ta_start = touch_pos_to_area(touch_start_pos[0], touch_start_pos[1]);
-      }
-      if (touch_data & TOUCH_MOVE) {
-        touch_move_pos[0] = (touch_data >> 12) & 0xFFF;
-        touch_move_pos[1] = (touch_data >> 0) & 0xFFF;
+        // pull touch screen
+        touch_data = touch_read();
+        if ( touch_data != 0 ) {
+            if ( touch_data & TOUCH_START ) {
+                // reset on new touch event
+                touch_center_cross = false;
+                ta_start = TOUCH_AREA_OTHER;
+                ta_end = TOUCH_AREA_OTHER;
 
-        if (TOUCH_AREA_C ==
-            touch_pos_to_area(touch_move_pos[0], touch_move_pos[1]))
-          touch_center_cross = true;
-      }
-      if (touch_data & TOUCH_END) {
-        touch_end_pos[0] = (touch_data >> 12) & 0xFFF;
-        touch_end_pos[1] = (touch_data >> 0) & 0xFFF;
+                touch_start_pos[0] = (touch_data >> 12) & 0xFFF;
+                touch_start_pos[1] = (touch_data >> 0) & 0xFFF;
 
-        ta_end = touch_pos_to_area(touch_end_pos[0], touch_end_pos[1]);
-      }
+                ta_start = touch_pos_to_area(touch_start_pos[0], touch_start_pos[1]);
+            }
+            if ( touch_data & TOUCH_MOVE ) {
+                touch_move_pos[0] = (touch_data >> 12) & 0xFFF;
+                touch_move_pos[1] = (touch_data >> 0) & 0xFFF;
+
+                if ( TOUCH_AREA_C == touch_pos_to_area(touch_move_pos[0], touch_move_pos[1]) )
+                    touch_center_cross = true;
+            }
+            if ( touch_data & TOUCH_END ) {
+                touch_end_pos[0] = (touch_data >> 12) & 0xFFF;
+                touch_end_pos[1] = (touch_data >> 0) & 0xFFF;
+
+                ta_end = touch_pos_to_area(touch_end_pos[0], touch_end_pos[1]);
+            }
+        }
+
+        // check if condition meet
+        // BOOT_TARGET_BOARDLOADER: 左上 -> (经过中心) -> 右下
+        if ( touch_center_cross && ta_start == TOUCH_AREA_TL && ta_end == TOUCH_AREA_BR ) {
+            boot_target = BOOT_TARGET_BOARDLOADER;
+            *stay_reason = STAY_REASON_MANUAL_OVERRIDE;
+            break;
+        }
+        // BOOT_TARGET_BOOTLOADER: 右上 -> 左下
+        if ( touch_center_cross && ta_start == TOUCH_AREA_TR && ta_end == TOUCH_AREA_BL ) {
+            boot_target = BOOT_TARGET_BOOTLOADER;
+            *stay_reason = STAY_REASON_MANUAL_OVERRIDE;
+            break;
+        }
+        // delay
+        hal_delay(1);
     }
 
-    // check if condition meet
-    if (touch_center_cross && ta_start == TOUCH_AREA_TL &&
-        ta_end == TOUCH_AREA_BR) {
-      boot_target = BOOT_TARGET_BOARDLOADER;
-      *stay_reason = STAY_REASON_MANUAL_OVERRIDE;
-      break;
+    // clear poweron bar
+    display_bar(160, 352, 160, 4, COLOR_BLACK);
+
+    // if manual override stay at this level no more checks
+    // 如果手动干预要求保持在 Boardloader，则不再检查
+    if ( (*stay_reason == STAY_REASON_MANUAL_OVERRIDE) && (boot_target == BOOT_TARGET_BOARDLOADER) ) {
+        return boot_target;
     }
 
-    if (touch_center_cross && ta_start == TOUCH_AREA_TR &&
-        ta_end == TOUCH_AREA_BL) {
-      boot_target = BOOT_TARGET_BOOTLOADER;
-      *stay_reason = STAY_REASON_MANUAL_OVERRIDE;
-      break;
+    // TODO: 跳过检查
+    return BOOT_TARGET_NORMAL;
+
+    // check bootloader update
+    // 检查 bootloader 更新
+    if ( sectrue == try_bootloader_update(false, false) ) {
+        boot_target = BOOT_TARGET_BOARDLOADER;
+        *stay_reason = STAY_REASON_UPDATE_NEXT_TARGET;
+        return boot_target;
     }
 
-    // delay
-    hal_delay(1);
-  }
+    // check res
+    // 检查资源
+    if ( !emmc_fs_path_exist("0:res/.ONEKEY_RESOURCE") ) {
+        boot_target = BOOT_TARGET_BOARDLOADER;
+        *stay_reason = STAY_REASON_INVALID_DEPENDENCY;
+        return boot_target;
+    }
 
-  // clear poweron bar
-  display_bar(160, 352, 160, 4, COLOR_BLACK);
+    // check bootloader
+    // 检查 bootloader
+    if ( sectrue != verify_bootloader(hdr, hdr_valid, code_valid, NULL, 0) ) {
+        boot_target = BOOT_TARGET_BOARDLOADER;
+        *stay_reason = STAY_REASON_INVALID_NEXT_TARGET;
+        return boot_target;
+    }
 
-  // if manual override stay at this level no more checks
-  if ((*stay_reason == STAY_REASON_MANUAL_OVERRIDE) &&
-      (boot_target == BOOT_TARGET_BOARDLOADER)) {
     return boot_target;
-  }
-
-  // check bootloader update
-  if (sectrue == try_bootloader_update(false, false)) {
-    boot_target = BOOT_TARGET_BOARDLOADER;
-    *stay_reason = STAY_REASON_UPDATE_NEXT_TARGET;
-    return boot_target;
-  }
-
-  // check res
-  if (!emmc_fs_path_exist("0:res/.ONEKEY_RESOURCE")) {
-    boot_target = BOOT_TARGET_BOARDLOADER;
-    *stay_reason = STAY_REASON_INVALID_DEPENDENCY;
-    return boot_target;
-  }
-
-  // check bootloader
-  if (sectrue != verify_bootloader(hdr, hdr_valid, code_valid, NULL, 0)) {
-    boot_target = BOOT_TARGET_BOARDLOADER;
-    *stay_reason = STAY_REASON_INVALID_NEXT_TARGET;
-    return boot_target;
-  }
-
-  return boot_target;
 }
 
-static secbool get_device_serial(char *serial, size_t len) {
-  // init
-  uint8_t otp_serial[FLASH_OTP_BLOCK_SIZE] = {0};
-  memzero(otp_serial, sizeof(otp_serial));
-  memzero(serial, len);
+/**
+ * @brief 获取设备序列对象
+ *
+ * @param serial
+ * @param len
+ * @return secbool
+ */
+static secbool get_device_serial(char* serial, size_t len) {
+    // init
+    uint8_t otp_serial[FLASH_OTP_BLOCK_SIZE] = {0};
+    memzero(otp_serial, sizeof(otp_serial));
+    memzero(serial, len);
 
-  // get OTP serial
-  if (sectrue != flash_otp_is_locked(FLASH_OTP_DEVICE_SERIAL)) return secfalse;
+    // get OTP serial
+    if ( sectrue != flash_otp_is_locked(FLASH_OTP_DEVICE_SERIAL) )
+        return secfalse;
 
-  if (sectrue != flash_otp_read(FLASH_OTP_DEVICE_SERIAL, 0, otp_serial,
-                                sizeof(otp_serial))) {
-    return secfalse;
-  }
-
-  // make sure last element is '\0'
-  otp_serial[FLASH_OTP_BLOCK_SIZE - 1] = '\0';
-
-  // check if all is ascii
-  for (uint32_t i = 0; i < sizeof(otp_serial); i++) {
-    if (otp_serial[i] == '\0') {
-      break;
+    if ( sectrue != flash_otp_read(FLASH_OTP_DEVICE_SERIAL, 0, otp_serial, sizeof(otp_serial)) ) {
+        return secfalse;
     }
-    if (otp_serial[i] < ' ' || otp_serial[i] > '~') {
-      return secfalse;
+
+    // make sure last element is '\0'
+    otp_serial[FLASH_OTP_BLOCK_SIZE - 1] = '\0';
+
+    // check if all is ascii
+    for ( uint32_t i = 0; i < sizeof(otp_serial); i++ ) {
+        if ( otp_serial[i] == '\0' ) {
+            break;
+        }
+        if ( otp_serial[i] < ' ' || otp_serial[i] > '~' ) {
+            return secfalse;
+        }
     }
-  }
 
-  // copy to output buffer
-  memcpy(serial, otp_serial, MIN(len, sizeof(otp_serial)));
+    // copy to output buffer
+    memcpy(serial, otp_serial, MIN(len, sizeof(otp_serial)));
 
-  // cutoff by strlen
-  serial[strlen(serial)] = '\0';
+    // cutoff by strlen
+    serial[strlen(serial)] = '\0';
 
-  return sectrue;
+    return sectrue;
 }
 
+/**
+ * @brief USB 连接状态切换
+ *
+ */
 static void usb_connect_switch(void) {
-  static bool usb_opened = false;
-  static uint32_t counter0 = 0, counter1 = 0;
+    static bool usb_opened = false;
+    static uint32_t counter0 = 0, counter1 = 0;
 
-  if (usb_3320_host_connected()) {
-    counter0++;
-    counter1 = 0;
-    hal_delay(1);
-    if (counter0 > 5) {
-      counter0 = 0;
-      if (!usb_opened) {
-        usb_start();
-        usb_opened = true;
-      }
+    if ( usb_3320_host_connected() ) {
+        counter0++;
+        counter1 = 0;
+        hal_delay(1);
+        if ( counter0 > 5 ) {
+            counter0 = 0;
+            if ( !usb_opened ) {
+                usb_start();
+                usb_opened = true;
+            }
+        }
+    } else {
+        counter0 = 0;
+        counter1++;
+        hal_delay(1);
+        if ( counter1 > 5 ) {
+            counter1 = 0;
+            if ( usb_opened ) {
+                usb_stop();
+                usb_opened = false;
+            }
+        }
     }
-  } else {
-    counter0 = 0;
-    counter1++;
-    hal_delay(1);
-    if (counter1 > 5) {
-      counter1 = 0;
-      if (usb_opened) {
-        usb_stop();
-        usb_opened = false;
-      }
-    }
-  }
 }
 
 int main(void) {
-  // minimal initialize
-  reset_flags_reset();
-  periph_init();
-  system_clock_config();
-  dwt_init();
-  cpu_cache_enable();
-  sdram_init();
+    // minimal initialize
+    reset_flags_reset();   // 清楚复标志
+    periph_init();         // 初始化外设
+    system_clock_config(); // 系统时钟初始化
+    dwt_init();
+    cpu_cache_enable();
+    // cpu_cache_disable();
+    sdram_init();
 
-  // enforce protection
-  flash_option_bytes_init();
+    // enforce protection
+    /*
+        Production:     DRP-Level2 保护
+        Development:    DRP-Level0 保护
+    */
+    // TODO: 跳过 flash 保护
+    // flash_option_bytes_init();
 
-  mpu_config_boardloader(sectrue, sectrue);
-  mpu_config_bootloader(sectrue, secfalse);
-  mpu_config_base();  // base config last as it contains deny access layers and
-                      // mpu may already running
-  mpu_ctrl(sectrue);  // ensure enabled
+    mpu_config_boardloader(sectrue, sectrue);
+    mpu_config_bootloader(sectrue, sectrue);
+    mpu_config_base(); // base config last as it contains deny access layers and mpu may already running
+    mpu_ctrl(sectrue); // ensure enabled
 
-  // user interface
-  lcd_init();
-  display_clear();
-  lcd_pwm_init();
-  display_backlight(128);
-  touch_init();
+    // __BKPT(0);
 
-  // fault handler
-  bus_fault_enable();  // it's here since requires user interface
-  set_handle_flash_ecc_error(sectrue);
+    // user interface
+    lcd_init();
+    display_clear();
+    lcd_pwm_init();
+    display_backlight(128);
+    touch_init();
 
-  // periph initialize
-  flash_otp_init();
-  rng_init();
-  clear_otg_hs_memory();
+    // fault handler
+    bus_fault_enable(); // it's here since requires user interface
+    set_handle_flash_ecc_error(sectrue);
 
-  // emmc init and volume check
-  emmc_fs_init();
-  if (!emmc_fs_is_partitioned()) {
-    emmc_fs_recreate(true, true, true);
-  }
-  emmc_fs_mount(true, true);
+    // periph initialize
+    // flash_otp_init();      // OTP 初始化
+    rng_init();            // 随机数生成器初始化
+    clear_otg_hs_memory(); // 清理 USB 内存
 
-  // display boot screen
-  display_image((DISPLAY_RESX - 128) / 2, 190, 128, 128, toi_icon_onekey + 12,
-                sizeof(toi_icon_onekey) - 12);
-  display_image((DISPLAY_RESX - 140) / 2, DISPLAY_RESY - 120, 140, 30,
-                toi_icon_safeos + 12, sizeof(toi_icon_safeos) - 12);
-  display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY - 64, "Powered by OneKey",
-                      -1, FONT_NORMAL, COLOR_GRAY, COLOR_BLACK);
+    // emmc init and volume check
+    emmc_fs_init();
+    if ( !emmc_fs_is_partitioned() ) {
+        emmc_fs_recreate(true, true, true);
+    }
+    emmc_fs_mount(true, true);
+
+    // display boot screen
+    display_image((DISPLAY_RESX - 128) / 2, 190, 128, 128, toi_icon_onekey + 12, sizeof(toi_icon_onekey) - 12);
+    display_image(
+        (DISPLAY_RESX - 140) / 2, DISPLAY_RESY - 120, 140, 30, toi_icon_safeos + 12, sizeof(toi_icon_safeos) - 12
+    );
+    display_text_center(
+        DISPLAY_RESX / 2, DISPLAY_RESY - 64, "Powered by OneKey", -1, FONT_NORMAL, COLOR_GRAY, COLOR_BLACK
+    );
 #if !PRODUCTION
-  display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST VERSION", -1,
-                      FONT_NORMAL, COLOR_RED, COLOR_BLACK);
+    display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST VERSION", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
 #endif
 
-  STAY_REASON stay_reason;
-  image_header hdr;
-  secbool hdr_valid = secfalse;
-  secbool code_valid = secfalse;
-  BOOT_TARGET boot_target =
-      decide_boot_target(&stay_reason, &hdr, &hdr_valid, &code_valid);
-
-  if (boot_target == BOOT_TARGET_BOARDLOADER) {
-    if (stay_reason == STAY_REASON_UPDATE_NEXT_TARGET) {
-      try_bootloader_update(true, true);
-    } else {
-      display_boardloader_title("USB Mass Storage Mode\n", stay_reason);
-
-      char serial[USB_SIZ_STRING_SERIAL];
-      get_device_serial(serial, sizeof(serial));
-      usb_msc_init(serial, sizeof(serial));
-
-      while (1) {
-        usb_connect_switch();
-        if (system_reset == 1) {
-          hal_delay(5);
-          restart();
+    STAY_REASON stay_reason;       // 状态原因
+    image_header hdr;              // 镜像头
+    secbool hdr_valid = secfalse;  // 镜像验证标志
+    secbool code_valid = secfalse; // 代码段验证标志
+    // 决定启动目标
+    BOOT_TARGET boot_target = decide_boot_target(&stay_reason, &hdr, &hdr_valid, &code_valid);
+    // todo:
+    boot_target = BOOT_TARGET_NORMAL;
+    if ( boot_target == BOOT_TARGET_BOARDLOADER ) {
+        if ( stay_reason == STAY_REASON_UPDATE_NEXT_TARGET ) {
+            try_bootloader_update(true, true);
+        } else {
+            display_boardloader_title("USB Mass Storage Mode\n", stay_reason);
+            char serial[USB_SIZ_STRING_SERIAL];
+            get_device_serial(serial, sizeof(serial));
+            usb_msc_init(serial, sizeof(serial));
+            while ( 1 ) {
+                usb_connect_switch();
+                if ( system_reset == 1 ) {
+                    hal_delay(5);
+                    restart();
+                }
+            }
         }
-      }
     }
-  }
 
-  *BOOT_TARGET_FLAG_ADDR = boot_target;  // set flag for bootloader to comsume
+    *BOOT_TARGET_FLAG_ADDR = boot_target; // set flag for bootloader to comsume
 
-  set_handle_flash_ecc_error(secfalse);
-  bus_fault_disable();
+    set_handle_flash_ecc_error(secfalse);
+    bus_fault_disable();
 
-  SCB_CleanDCache();  // TODO: needed?
+    SCB_CleanDCache(); // TODO: needed?
 
-  mpu_config_bootloader(sectrue, sectrue);
+    mpu_config_bootloader(sectrue, sectrue);
 
-  jump_to(BOOTLOADER_START + hdr.hdrlen);
+    // jump_to(BOOTLOADER_START + hdr.hdrlen);
+    jump_to(BOOTLOADER_START + 1024);
 
-  return 0;
+    return 0;
 }

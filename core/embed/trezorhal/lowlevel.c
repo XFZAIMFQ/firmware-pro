@@ -27,15 +27,15 @@
     "no-stack-protector")  // applies to all functions in this file
 
 #if PRODUCTION
-#define WANT_RDP_LEVEL (OB_RDP_LEVEL_2)
-#define WANT_WRP_SECTORS (OB_WRP_SECTOR_0)
+#define WANT_RDP_LEVEL (OB_RDP_LEVEL_2)     // PRODUCTION 期望的保护等级
+#define WANT_WRP_SECTORS (OB_WRP_SECTOR_0)  // PRODUCTION 保护第0扇区 (boardloader)
 #else
-#define WANT_RDP_LEVEL (OB_RDP_LEVEL_0)
-#define WANT_WRP_SECTORS (0)
+#define WANT_RDP_LEVEL (OB_RDP_LEVEL_0)     // DEVELOPMENT 期望的保护等级
+#define WANT_WRP_SECTORS (0)               // DEVELOPMENT 不保护任何扇区
 #endif
 
 // BOR LEVEL 3: Reset level threshold is around 2.5 V
-#define WANT_BOR_LEVEL (OB_BOR_LEVEL3)
+#define WANT_BOR_LEVEL (OB_BOR_LEVEL3) // BOR LEVEL 3: Reset level threshold is around 2.5 V
 
 /**
  * @brief  CPU L1-Cache enable.
@@ -197,7 +197,7 @@ void reset_flags_reset(void) {
 
 void flash_option_bytes_init(void) {
   FLASH_OBProgramInitTypeDef ob_config;
-
+  // 获取当前FLASHE配置
   HAL_FLASHEx_OBGetConfig(&ob_config);
 
   if (ob_config.RDPLevel != OB_RDP_LEVEL_2) {
@@ -222,12 +222,13 @@ void flash_option_bytes_init(void) {
     }
   }
 
+  // 设置期望的保护等级和保护扇区
   if (ob_config.RDPLevel != WANT_RDP_LEVEL) {
     ob_config.OptionType |=
         OPTIONBYTE_WRP | OPTIONBYTE_RDP | OPTIONBYTE_USER | OPTIONBYTE_BOR;
-    ob_config.RDPLevel = WANT_RDP_LEVEL;  //;
+    ob_config.RDPLevel = WANT_RDP_LEVEL;  // 期望的保护等级
     ob_config.BORLevel = WANT_BOR_LEVEL;
-    ob_config.WRPSector = WANT_WRP_SECTORS;
+    ob_config.WRPSector = WANT_WRP_SECTORS;// 期望保护的扇区
     ob_config.USERType =
         OB_USER_IWDG1_SW | OB_USER_IWDG2_SW | OB_USER_NRST_STOP_D1 |
         OB_USER_NRST_STOP_D2 | OB_USER_NRST_STDBY_D1 | OB_USER_NRST_STDBY_D2 |

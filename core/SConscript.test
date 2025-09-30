@@ -1,0 +1,30 @@
+# pylint: disable=E0602
+
+import os
+
+SOURCE = [
+    'hello.c',
+]
+
+env = Environment(ENV=os.environ,COMPILATIONDB_USE_ABSPATH=True)
+env.Tool('compilation_db')
+#db = env.CompilationDatabase('compile_commands.json')
+
+obj_program = []
+obj_program += env.Object(source=SOURCE)
+
+hello = env.Command(
+    target='test.e',
+    source=obj_program,
+    action='$LINK $SOURCE -o $TARGET'
+)
+
+# 生成到变体目录（相对当前 SConscript 的变体工作目录）
+db = env.CompilationDatabase('compile_commands.json')
+
+# 提供一个别名，便于单独生成数据库
+Alias('compiledb', db)
+AlwaysBuild('compiledb')
+
+# 如果希望不带目标直接 scons 就同时生成程序和数据库：
+# Default([hello, db])

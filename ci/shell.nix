@@ -87,6 +87,11 @@ stdenvNoCC.mkDerivation ({
     wget
     zlib
     moreutils
+    openocd     # for flashing and debugging
+    direnv      # for loading environment variables from .envrc
+    nixpkgs-fmt # for formatting nix files
+    rnix-lsp    # for Nix language server support in VSCode
+    bear        # for generating compile_commands.json
   ] ++ lib.optionals (!stdenv.isDarwin) [
     autoPatchelfHook
     gcc11

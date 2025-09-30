@@ -4,7 +4,7 @@
 
 tee TempFlashScript.jlink > /dev/null << EOT
 usb $JLINK_SN
-device OneKeyH7
+device STM32H747XI_M7
 SelectInterface swd
 speed 20000
 RSetType 0

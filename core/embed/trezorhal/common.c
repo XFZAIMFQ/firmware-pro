@@ -30,15 +30,15 @@
 #include "touch.h"
 
 #if defined(STM32F427xx) || defined(STM32F405xx)
-#include "stm32f4xx_ll_utils.h"
+  #include "stm32f4xx_ll_utils.h"
 #elif defined(STM32H747xx)
-#include "stm32h7xx_ll_utils.h"
+  #include "stm32h7xx_ll_utils.h"
 #endif
 
 #ifdef RGB16
-#define COLOR_FATAL_ERROR RGB16(0x7F, 0x00, 0x00)
+  #define COLOR_FATAL_ERROR RGB16(0x7F, 0x00, 0x00)
 #else
-#define COLOR_FATAL_ERROR COLOR_BLACK
+  #define COLOR_FATAL_ERROR COLOR_BLACK
 #endif
 
 // clang-format off
@@ -61,25 +61,27 @@ extern void shutdown_privileged(void);
 
 void shutdown(void) {
 #ifdef USE_SVC_SHUTDOWN
-  svc_shutdown();
+    svc_shutdown();
 #else
-  // It won't work properly unless called from the privileged mode
-  shutdown_privileged();
+    // It won't work properly unless called from the privileged mode
+    shutdown_privileged();
 #endif
 }
 
-void restart(void) { svc_reset_system(); }
+void restart(void) {
+    svc_reset_system();
+}
 
 void reboot_to_board(void) {
-  *BOOT_TARGET_FLAG_ADDR = BOOT_TARGET_BOARDLOADER;
-  SCB_CleanDCache();
-  svc_reset_system();
+    *BOOT_TARGET_FLAG_ADDR = BOOT_TARGET_BOARDLOADER;
+    SCB_CleanDCache();
+    svc_reset_system();
 }
 
 void reboot_to_boot(void) {
-  *BOOT_TARGET_FLAG_ADDR = BOOT_TARGET_BOOTLOADER;
-  SCB_CleanDCache();
-  svc_reset_system();
+    *BOOT_TARGET_FLAG_ADDR = BOOT_TARGET_BOOTLOADER;
+    SCB_CleanDCache();
+    svc_reset_system();
 }
 
 // print line height (DISPLAY_CHAR_HEIGHT + 2)
@@ -88,284 +90,265 @@ void reboot_to_boot(void) {
 #define DISP_LINE_TO_Y(LINE) (8 + (DISPLAY_CHAR_HEIGHT + 2) * (LINE))
 
 void __attribute__((noreturn))
-__fatal_error(const char* expr, const char* msg, const char* file, int line,
-              const char* func) {
-  static bool triggered = false;
-  static int print_y;
+__fatal_error(const char* expr, const char* msg, const char* file, int line, const char* func) {
+    static bool triggered = false;
+    static int print_y;
 
-  if (!triggered) {
-    display_orientation(0);
-    display_backlight(255);
-    display_print_clear();
-    display_clear();
-    display_print_color(RGB16(0x69, 0x69, 0x69), COLOR_BLACK);
+    if ( !triggered ) {
+        display_orientation(0);
+        display_backlight(255);
+        display_print_clear();
+        display_clear();
+        display_print_color(RGB16(0x69, 0x69, 0x69), COLOR_BLACK);
 
-    display_image(9, 50, 46, 40, toi_icon_warning + 12,
-                  sizeof(toi_icon_warning) - 12);
-    display_text(8, 140, "System error occurred", -1, FONT_NORMAL, COLOR_WHITE,
-                 COLOR_BLACK);
+        display_image(9, 50, 46, 40, toi_icon_warning + 12, sizeof(toi_icon_warning) - 12);
+        display_text(8, 140, "System error occurred", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
 
 #ifdef SCM_REVISION
-    const uint8_t* rev = (const uint8_t*)SCM_REVISION;
-    display_text_printf(8, DISP_LINE_TO_Y(26), "rev: %02x%02x%02x%02x%02x",
-                        rev[0], rev[1], rev[2], rev[3], rev[4]);
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
+        const uint8_t* rev = (const uint8_t*)SCM_REVISION;
+        display_text_printf(8, DISP_LINE_TO_Y(26), "rev: %02x%02x%02x%02x%02x", rev[0], rev[1], rev[2], rev[3], rev[4]);
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
 #endif
 #ifdef BUILD_ID
-    const uint8_t* id = (const uint8_t*)BUILD_ID;
-    display_text_printf(8, DISP_LINE_TO_Y(27), "build id: %s", id);
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
+        const uint8_t* id = (const uint8_t*)BUILD_ID;
+        display_text_printf(8, DISP_LINE_TO_Y(27), "build id: %s", id);
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
 #endif
 
-    print_y = DISP_LINE_TO_Y(20);
-    display_text_printf(8, print_y, "FATAL ERROR:");
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
-  } else {
-    print_y = DISP_LINE_TO_Y(14);
+        print_y = DISP_LINE_TO_Y(20);
+        display_text_printf(8, print_y, "FATAL ERROR:");
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
+    } else {
+        print_y = DISP_LINE_TO_Y(14);
 
-    display_text_printf(8, print_y, "FATAL ERROR (while handling):");
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
-  }
-
-  if (expr) {
-    display_text_printf(8, print_y, "expr: %s", expr);
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
-  }
-  if (msg) {
-    display_text_printf(8, print_y, "msg: %s", msg);
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
-  }
-  if (file) {
-    display_text_printf(8, print_y, "file: %s:%d", file, line);
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
-  }
-  if (func) {
-    display_text_printf(8, print_y, "func: %s", func);
-    print_y += (DISPLAY_CHAR_HEIGHT + 2);
-  }
-
-  display_text_printf(8, print_y, "---------------------------------------");
-  print_y += (DISPLAY_CHAR_HEIGHT + 2);
-
-  if (!triggered) {
-    triggered = true;
-
-    if (touch_is_inited()) {
-      display_text(8, DISP_LINE_TO_Y(28), "Tap to restart ...", -1, FONT_NORMAL,
-                   COLOR_WHITE, COLOR_BLACK);
-      while (!touch_click()) {
-      }
-      restart();
+        display_text_printf(8, print_y, "FATAL ERROR (while handling):");
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
     }
-  }
 
-  display_bar(0, DISP_LINE_TO_Y(28) - (DISPLAY_CHAR_HEIGHT + 2), DISPLAY_RESX,
-              DISPLAY_RESY, COLOR_BLACK);
-  display_text(8, DISP_LINE_TO_Y(28), "Hold power button to shutdown ...", -1,
-               FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+    if ( expr ) {
+        display_text_printf(8, print_y, "expr: %s", expr);
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
+    }
+    if ( msg ) {
+        display_text_printf(8, print_y, "msg: %s", msg);
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
+    }
+    if ( file ) {
+        display_text_printf(8, print_y, "file: %s:%d", file, line);
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
+    }
+    if ( func ) {
+        display_text_printf(8, print_y, "func: %s", func);
+        print_y += (DISPLAY_CHAR_HEIGHT + 2);
+    }
 
-  for (;;)
-    ;
+    display_text_printf(8, print_y, "---------------------------------------");
+    print_y += (DISPLAY_CHAR_HEIGHT + 2);
+
+    if ( !triggered ) {
+        triggered = true;
+
+        if ( touch_is_inited() ) {
+            display_text(8, DISP_LINE_TO_Y(28), "Tap to restart ...", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+            while ( !touch_click() ) {}
+            restart();
+        }
+    }
+
+    display_bar(0, DISP_LINE_TO_Y(28) - (DISPLAY_CHAR_HEIGHT + 2), DISPLAY_RESX, DISPLAY_RESY, COLOR_BLACK);
+    display_text(8, DISP_LINE_TO_Y(28), "Hold power button to shutdown ...", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+
+    for ( ;; )
+        ;
 }
 
 void __attribute__((noreturn))
-error_shutdown(const char* line1, const char* line2, const char* line3,
-               const char* line4) {
-  display_orientation(0);
-  display_backlight(255);
+error_shutdown(const char* line1, const char* line2, const char* line3, const char* line4) {
+    display_orientation(0);
+    display_backlight(255);
 #ifdef TREZOR_FONT_NORMAL_ENABLE
-  uint16_t font_color = RGB16(0x69, 0x69, 0x69);
-  display_clear();
-  dwt_delay_ms(3);
-  display_image(9, 50, 46, 40, toi_icon_warning + 12,
-                sizeof(toi_icon_warning) - 12);
-  display_text(8, 140, "System problem detected.", -1, FONT_NORMAL, COLOR_WHITE,
-               COLOR_BLACK);
-  display_text(8, 784, "Tap to restart ...", -1, FONT_NORMAL, COLOR_WHITE,
-               COLOR_BLACK);
+    uint16_t font_color = RGB16(0x69, 0x69, 0x69);
+    display_clear();
+    dwt_delay_ms(3);
+    display_image(9, 50, 46, 40, toi_icon_warning + 12, sizeof(toi_icon_warning) - 12);
+    display_text(8, 140, "System problem detected.", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+    display_text(8, 784, "Tap to restart ...", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
 
-  int y = 720;
+    int y = 720;
 
-  if (line4) {
-    display_text(8, y, line4, -1, FONT_NORMAL, font_color, COLOR_BLACK);
-    y -= 32;
-  }
-  if (line3) {
-    display_text(8, y, line3, -1, FONT_NORMAL, font_color, COLOR_BLACK);
-    y -= 32;
-  }
-  if (line2) {
-    display_text(8, y, line2, -1, FONT_NORMAL, font_color, COLOR_BLACK);
-    y -= 32;
-  }
-  if (line1) {
-    display_text(8, y, line1, -1, FONT_NORMAL, font_color, COLOR_BLACK);
-    y -= 32;
-  }
+    if ( line4 ) {
+        display_text(8, y, line4, -1, FONT_NORMAL, font_color, COLOR_BLACK);
+        y -= 32;
+    }
+    if ( line3 ) {
+        display_text(8, y, line3, -1, FONT_NORMAL, font_color, COLOR_BLACK);
+        y -= 32;
+    }
+    if ( line2 ) {
+        display_text(8, y, line2, -1, FONT_NORMAL, font_color, COLOR_BLACK);
+        y -= 32;
+    }
+    if ( line1 ) {
+        display_text(8, y, line1, -1, FONT_NORMAL, font_color, COLOR_BLACK);
+        y -= 32;
+    }
 
 #else
-  display_print_color(COLOR_WHITE, COLOR_FATAL_ERROR);
-  if (line1) {
-    display_printf("%s\n", line1);
-  }
-  if (line2) {
-    display_printf("%s\n", line2);
-  }
-  if (line3) {
-    display_printf("%s\n", line3);
-  }
-  if (line4) {
-    display_printf("%s\n", line4);
-  }
-  display_printf("\nPlease unplug the device.\n");
+    display_print_color(COLOR_WHITE, COLOR_FATAL_ERROR);
+    if ( line1 ) {
+        display_printf("%s\n", line1);
+    }
+    if ( line2 ) {
+        display_printf("%s\n", line2);
+    }
+    if ( line3 ) {
+        display_printf("%s\n", line3);
+    }
+    if ( line4 ) {
+        display_printf("%s\n", line4);
+    }
+    display_printf("\nPlease unplug the device.\n");
 #endif
 
-  if (touch_is_inited()) {
-    display_text(8, 784, "Tap to restart ...", -1, FONT_NORMAL, COLOR_WHITE,
-                 COLOR_BLACK);
-    while (!touch_click()) {
+    if ( touch_is_inited() ) {
+        display_text(8, 784, "Tap to restart ...", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+        while ( !touch_click() ) {}
+        restart();
+    } else {
+        display_text(8, 784, "Hold power button to shutdown ...", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
     }
-    restart();
-  } else {
-    display_text(8, 784, "Hold power button to shutdown ...", -1, FONT_NORMAL,
-                 COLOR_WHITE, COLOR_BLACK);
-  }
 
-  for (;;)
-    ;
+    for ( ;; )
+        ;
 }
 
-void error_reset(const char* line1, const char* line2, const char* line3,
-                 const char* line4) {
-  display_orientation(0);
-  display_printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-  display_print_color(RGB16(0x69, 0x69, 0x69), COLOR_BLACK);
-  if (line1) {
-    display_printf("%s\n", line1);
-  }
-  if (line2) {
-    display_printf("%s\n", line2);
-  }
-  if (line3) {
-    display_printf("%s\n", line3);
-  }
-  if (line4) {
-    display_printf("%s\n", line4);
-  }
+void error_reset(const char* line1, const char* line2, const char* line3, const char* line4) {
+    display_orientation(0);
+    display_printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    display_print_color(RGB16(0x69, 0x69, 0x69), COLOR_BLACK);
+    if ( line1 ) {
+        display_printf("%s\n", line1);
+    }
+    if ( line2 ) {
+        display_printf("%s\n", line2);
+    }
+    if ( line3 ) {
+        display_printf("%s\n", line3);
+    }
+    if ( line4 ) {
+        display_printf("%s\n", line4);
+    }
 
-  display_backlight(255);
-  display_printf("\n\n");
-  display_image(9, 50, 46, 40, toi_icon_warning + 12,
-                sizeof(toi_icon_warning) - 12);
-  display_text(8, 140, "System problem detected.", -1, FONT_NORMAL, COLOR_WHITE,
-               COLOR_BLACK);
-  display_text(8, 784, "It will be restart 5s later.", -1, FONT_NORMAL,
-               COLOR_WHITE, COLOR_BLACK);
+    display_backlight(255);
+    display_printf("\n\n");
+    display_image(9, 50, 46, 40, toi_icon_warning + 12, sizeof(toi_icon_warning) - 12);
+    display_text(8, 140, "System problem detected.", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+    display_text(8, 784, "It will be restart 5s later.", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
 
-  hal_delay(5000);
-  restart();
+    hal_delay(5000);
+    restart();
 }
 
 void error_pin_max_prompt(void) {
-  display_orientation(0);
-  display_printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-  display_print_color(RGB16(0x69, 0x69, 0x69), COLOR_BLACK);
+    display_orientation(0);
+    display_printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    display_print_color(RGB16(0x69, 0x69, 0x69), COLOR_BLACK);
 
-  display_backlight(255);
-  display_printf("\n\n");
-  display_image(9, 50, 46, 40, toi_icon_warning + 12,
-                sizeof(toi_icon_warning) - 12);
-  display_text(8, 140, "Too many wrong PIN attempts.Storage", -1, FONT_NORMAL,
-               COLOR_WHITE, COLOR_BLACK);
-  display_text(8, 164, "will be erased.", -1, FONT_NORMAL, COLOR_WHITE,
-               COLOR_BLACK);
+    display_backlight(255);
+    display_printf("\n\n");
+    display_image(9, 50, 46, 40, toi_icon_warning + 12, sizeof(toi_icon_warning) - 12);
+    display_text(8, 140, "Too many wrong PIN attempts.Storage", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+    display_text(8, 164, "will be erased.", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
 
-  display_text(8, 784, "It will be restart a few seconds later.", -1,
-               FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
+    display_text(8, 784, "It will be restart a few seconds later.", -1, FONT_NORMAL, COLOR_WHITE, COLOR_BLACK);
 }
 
 #ifndef NDEBUG
-void __assert_func(const char* file, int line, const char* func,
-                   const char* expr) {
-  __fatal_error(expr, "assert failed", file, line, func);
+void __assert_func(const char* file, int line, const char* func, const char* expr) {
+    __fatal_error(expr, "assert failed", file, line, func);
 }
 #endif
 
-void hal_delay(uint32_t ms) { HAL_Delay(ms); }
-uint32_t hal_ticks_ms() { return HAL_GetTick(); }
+void hal_delay(uint32_t ms) {
+    HAL_Delay(ms);
+}
+uint32_t hal_ticks_ms() {
+    return HAL_GetTick();
+}
 
 // reference RM0090 section 35.12.1 Figure 413
-#define USB_OTG_HS_DATA_FIFO_RAM (USB_OTG_HS_PERIPH_BASE + 0x20000U)
+#define USB_OTG_HS_DATA_FIFO_RAM  (USB_OTG_HS_PERIPH_BASE + 0x20000U)
 #define USB_OTG_HS_DATA_FIFO_SIZE (4096U)
 
 void clear_otg_hs_memory(void) {
-  // use the HAL version due to section 2.1.6 of STM32F42xx Errata sheet
-  __HAL_RCC_USB_OTG_HS_CLK_ENABLE();  // enable USB_OTG_HS peripheral clock so
-                                      // that the peripheral memory is
-                                      // accessible
-  memset_reg(
-      (volatile void*)USB_OTG_HS_DATA_FIFO_RAM,
-      (volatile void*)(USB_OTG_HS_DATA_FIFO_RAM + USB_OTG_HS_DATA_FIFO_SIZE),
-      0);
-  __HAL_RCC_USB_OTG_HS_CLK_DISABLE();  // disable USB OTG_HS peripheral clock as
-                                       // the peripheral is not needed right now
+    // use the HAL version due to section 2.1.6 of STM32F42xx Errata sheet
+    __HAL_RCC_USB_OTG_HS_CLK_ENABLE(); // enable USB_OTG_HS peripheral clock so
+                                       // that the peripheral memory is
+                                       // accessible
+    memset_reg(
+        (volatile void*)USB_OTG_HS_DATA_FIFO_RAM,
+        (volatile void*)(USB_OTG_HS_DATA_FIFO_RAM + USB_OTG_HS_DATA_FIFO_SIZE),
+        0
+    );
+    __HAL_RCC_USB_OTG_HS_CLK_DISABLE(); // disable USB OTG_HS peripheral clock as
+                                        // the peripheral is not needed right now
 }
 
 uint32_t __stack_chk_guard = 0;
 
 void __attribute__((noreturn)) __stack_chk_fail(void) {
-  error_shutdown("Internal error", "(SS)", NULL, NULL);
+    error_shutdown("Internal error", "(SS)", NULL, NULL);
 }
 
 uint8_t HW_ENTROPY_DATA[HW_ENTROPY_LEN];
 
 void collect_hw_entropy(void) {
-  // collect entropy from UUID
-  uint32_t w = LL_GetUID_Word0();
-  memcpy(HW_ENTROPY_DATA, &w, 4);
-  w = LL_GetUID_Word1();
-  memcpy(HW_ENTROPY_DATA + 4, &w, 4);
-  w = LL_GetUID_Word2();
-  memcpy(HW_ENTROPY_DATA + 8, &w, 4);
-  // set entropy in the OTP randomness block
-  if (secfalse == flash_otp_is_locked(FLASH_OTP_BLOCK_RANDOMNESS)) {
-    uint8_t entropy[FLASH_OTP_BLOCK_SIZE];
-    random_buffer(entropy, FLASH_OTP_BLOCK_SIZE);
-    ensure(flash_otp_write(FLASH_OTP_BLOCK_RANDOMNESS, 0, entropy,
-                           FLASH_OTP_BLOCK_SIZE),
-           NULL);
-    ensure(flash_otp_lock(FLASH_OTP_BLOCK_RANDOMNESS), NULL);
-  }
-  // collect entropy from OTP randomness block
-  ensure(flash_otp_read(FLASH_OTP_BLOCK_RANDOMNESS, 0, HW_ENTROPY_DATA + 12,
-                        FLASH_OTP_BLOCK_SIZE),
-         NULL);
+    // collect entropy from UUID
+    uint32_t w = LL_GetUID_Word0();
+    memcpy(HW_ENTROPY_DATA, &w, 4);
+    w = LL_GetUID_Word1();
+    memcpy(HW_ENTROPY_DATA + 4, &w, 4);
+    w = LL_GetUID_Word2();
+    memcpy(HW_ENTROPY_DATA + 8, &w, 4);
+    // set entropy in the OTP randomness block
+    if ( secfalse == flash_otp_is_locked(FLASH_OTP_BLOCK_RANDOMNESS) ) {
+        uint8_t entropy[FLASH_OTP_BLOCK_SIZE];
+        random_buffer(entropy, FLASH_OTP_BLOCK_SIZE);
+        ensure(flash_otp_write(FLASH_OTP_BLOCK_RANDOMNESS, 0, entropy, FLASH_OTP_BLOCK_SIZE), NULL);
+        ensure(flash_otp_lock(FLASH_OTP_BLOCK_RANDOMNESS), NULL);
+    }
+    // collect entropy from OTP randomness block
+    ensure(flash_otp_read(FLASH_OTP_BLOCK_RANDOMNESS, 0, HW_ENTROPY_DATA + 12, FLASH_OTP_BLOCK_SIZE), NULL);
 }
 
 bool check_all_ones(const void* data, int len) {
-  if (!data) return false;
-  uint8_t result = 0xff;
-  const uint8_t* ptr = (const uint8_t*)data;
+    if ( !data )
+        return false;
+    uint8_t result = 0xff;
+    const uint8_t* ptr = (const uint8_t*)data;
 
-  for (; len; len--, ptr++) {
-    result &= *ptr;
-    if (result != 0xff) break;
-  }
+    for ( ; len; len--, ptr++ ) {
+        result &= *ptr;
+        if ( result != 0xff )
+            break;
+    }
 
-  return (result == 0xff);
+    return (result == 0xff);
 }
 
 bool check_all_zeros(const void* data, int len) {
-  if (!data) return false;
-  uint8_t result = 0x0;
-  const uint8_t* ptr = (const uint8_t*)data;
+    if ( !data )
+        return false;
+    uint8_t result = 0x0;
+    const uint8_t* ptr = (const uint8_t*)data;
 
-  for (; len; len--, ptr++) {
-    result |= *ptr;
-    if (result) break;
-  }
+    for ( ; len; len--, ptr++ ) {
+        result |= *ptr;
+        if ( result )
+            break;
+    }
 
-  return (result == 0x00);
+    return (result == 0x00);
 }
 
 // this function resets settings changed in one layer (bootloader/firmware),
@@ -373,43 +356,43 @@ bool check_all_zeros(const void* data, int len) {
 // where this setting might be unknown
 void ensure_compatible_settings(void) {
 #ifdef TREZOR_MODEL_T
-  display_set_big_endian();
+    display_set_big_endian();
 #endif
 }
 
 int compare_str_version(const char* version1, const char* version2) {
-  int vnum1 = 0, vnum2 = 0;
+    int vnum1 = 0, vnum2 = 0;
 
-  // Loop until both strings are processed
-  while (*version1 != '\0' || *version2 != '\0') {
-    // Store numeric part of version1 in vnum1
-    while (*version1 != '\0' && *version1 != '.') {
-      vnum1 = vnum1 * 10 + (*version1 - '0');
-      version1++;
-    }
+    // Loop until both strings are processed
+    while ( *version1 != '\0' || *version2 != '\0' ) {
+        // Store numeric part of version1 in vnum1
+        while ( *version1 != '\0' && *version1 != '.' ) {
+            vnum1 = vnum1 * 10 + (*version1 - '0');
+            version1++;
+        }
 
-    // Store numeric part of version2 in vnum2
-    while (*version2 != '\0' && *version2 != '.') {
-      vnum2 = vnum2 * 10 + (*version2 - '0');
-      version2++;
-    }
+        // Store numeric part of version2 in vnum2
+        while ( *version2 != '\0' && *version2 != '.' ) {
+            vnum2 = vnum2 * 10 + (*version2 - '0');
+            version2++;
+        }
 
-    // If version1 is greater than version2
-    if (vnum1 > vnum2) {
-      return 1;
-    }
-    if (vnum1 < vnum2) {
-      return -1;
-    }
+        // If version1 is greater than version2
+        if ( vnum1 > vnum2 ) {
+            return 1;
+        }
+        if ( vnum1 < vnum2 ) {
+            return -1;
+        }
 
-    // If equal, reset variables and go for next numeric part
-    vnum1 = vnum2 = 0;
-    if (*version1 != '\0') {
-      version1++;
+        // If equal, reset variables and go for next numeric part
+        vnum1 = vnum2 = 0;
+        if ( *version1 != '\0' ) {
+            version1++;
+        }
+        if ( *version2 != '\0' ) {
+            version2++;
+        }
     }
-    if (*version2 != '\0') {
-      version2++;
-    }
-  }
-  return 0;
+    return 0;
 }

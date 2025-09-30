@@ -1,31 +1,36 @@
 .PHONY: vendor
 
+# 显示当前make 的路径
+$(info Current Makefile path: $(shell command -v $(MAKE)))
+
 JOBS = 4
 MAKE = make -j $(JOBS)
 SCONS = scons -Q -j $(JOBS)
 
-BUILD_DIR             = build
-BOARDLOADER_BUILD_DIR = $(BUILD_DIR)/boardloader
+BUILD_DIR             		= build
+BOARDLOADER_BUILD_DIR 		= $(BUILD_DIR)/boardloader
 BOAR_DEV_REFLASH_BUILD_DIR  = $(BUILD_DIR)/boardloader_reflash_dev
-BOOTLOADER_BUILD_DIR  = $(BUILD_DIR)/bootloader
-FIRMWARE_BUILD_DIR    = $(BUILD_DIR)/firmware
-UNIX_BUILD_DIR        = $(BUILD_DIR)/unix
-RUST_BUILD_DIR        = $(BUILD_DIR)/rust
+BOOTLOADER_BUILD_DIR  		= $(BUILD_DIR)/bootloader
+FIRMWARE_BUILD_DIR   		= $(BUILD_DIR)/firmware
+UNIX_BUILD_DIR        		= $(BUILD_DIR)/unix
+RUST_BUILD_DIR        		= $(BUILD_DIR)/rust
 
-UNAME_S := $(shell uname -s)
-CURRENT_DIR := '\"$(shell pwd)\"'
-UNIX_PORT_OPTS ?=
+UNAME_S 		:= $(shell uname -s)
+CURRENT_DIR 	:= '\"$(shell pwd)\"'
+UNIX_PORT_OPTS 	?=
 CROSS_PORT_OPTS ?=
 
-PRODUCTION ?= 0
-PYOPT      ?= 1
-BITCOIN_ONLY ?= 0
-TREZOR_MODEL ?= T
-TREZOR_MEMPERF ?= 0
-ADDRESS_SANITIZER ?= 0
-UI2 ?= 0
-PRODUCTION_MODEL = H
-USE_THD89 ?= 1
+PRODUCTION 			?= 0
+PYOPT      			?= 1
+BITCOIN_ONLY 		?= 0
+TREZOR_MODEL 		?= T
+TREZOR_MEMPERF 		?= 0
+ADDRESS_SANITIZER 	?= 0
+UI2 				?= 0
+PRODUCTION_MODEL 	=  H
+USE_THD89 			?= 1
+SY_DEV 				?= 1
+COMPILE_DB 			?= 1
 
 # OpenOCD interface default. Alternative: ftdi/olimex-arm-usb-tiny-h
 OPENOCD_INTERFACE ?= stlink
@@ -169,7 +174,7 @@ build_embed: build_boardloader build_bootloader build_firmware # build boardload
 
 build_boardloader: CFLAGS += -DBUILD_ID='\"boardloader.$(BOARD_BUILD_VERSION)\"'
 build_boardloader: ## build boardloader
-	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" PRODUCTION_MODEL="$(PRODUCTION_MODEL)" $(BOARDLOADER_BUILD_DIR)/boardloader.bin
+	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" PRODUCTION_MODEL="$(PRODUCTION_MODEL)" $(BOARDLOADER_BUILD_DIR)/boardloader.bin $(BOARDLOADER_BUILD_DIR)/compile_commands.json
 
 build_boardloader_reflash_dev: build_boardloader ## build boardloader_reflash_dev
 	mkdir -p $(BOAR_DEV_REFLASH_BUILD_DIR)
@@ -263,6 +268,13 @@ jlink_device_enter_board:
 jlink_device_enter_boot:
 	embed/debugger_scripts/jlink/jlink_rebootDevice.sh 2
 
+jlink_gdb_server: ## start JLink GDB server
+	JLinkGDBServerCLExe -if SWD -device STM32H747XI_M7 -speed 4000 -port 2331
+
+openocd_stlink_gdb_server: ## start OpenOCD server
+# 	openocd -f "interface/stlink.cfg" -c "transport select $(OPENOCD_TRANSPORT)" -f "target/stm32h7x.cfg" -c "init; reset init"
+	openocd -f "./openocd_stlink_swd.cfg"
+
 GDB = arm-none-eabi-gdb --nx -ex 'set remotetimeout unlimited' -ex 'set confirm off' -ex 'target remote 127.0.0.1:3333' -ex 'monitor reset halt'
 
 gdb_boardloader: $(BOARDLOADER_BUILD_DIR)/boardloader.elf ## start remote gdb session to openocd with boardloader symbols
@@ -276,7 +288,7 @@ gdb_firmware: $(FIRMWARE_BUILD_DIR)/firmware.elf ## start remote gdb session to 
 
 ## misc commands:
 
-binctl: ## print info about binary files
+binctl: ## print info about binary files 打印二进制文件的相关信息 
 	./tools/headertool.py $(BOOTLOADER_BUILD_DIR)/bootloader.bin
 	./tools/headertool.py $(FIRMWARE_BUILD_DIR)/firmware.bin
 

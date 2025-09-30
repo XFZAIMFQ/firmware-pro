@@ -129,6 +129,8 @@ SOURCE_TREZORHAL = [
 ]
 
 env = Environment(ENV=os.environ, CFLAGS='%s -DPRODUCTION=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0')))
+env.Tool('compilation_db')
+
 
 # fw keys
 SOURCE_FW_KEYS = []
@@ -229,3 +231,5 @@ program_bin = env.Command(
     ]
     
 )
+
+db = env.CompilationDatabase('compile_commands.json')

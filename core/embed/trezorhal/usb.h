@@ -24,130 +24,142 @@
 #include <stdint.h>
 #include "secbool.h"
 
-#define USB_IFACE_NUM 0
-#define USB_IFACE_NULL 0xFF
+#define USB_IFACE_NUM   0
+#define USB_IFACE_NULL  0xFF
 
 #define USB_EP_DIR_MASK 0x80
-#define USB_EP_DIR_OUT 0x00
-#define USB_EP_DIR_IN 0x80
+#define USB_EP_DIR_OUT  0x00
+#define USB_EP_DIR_IN   0x80
 
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint16_t bcdUSB;
-  uint8_t bDeviceClass;
-  uint8_t bDeviceSubClass;
-  uint8_t bDeviceProtocol;
-  uint8_t bMaxPacketSize0;
-  uint16_t idVendor;
-  uint16_t idProduct;
-  uint16_t bcdDevice;
-  uint8_t iManufacturer;
-  uint8_t iProduct;
-  uint8_t iSerialNumber;
-  uint8_t bNumConfigurations;
+typedef struct __attribute__((packed))
+{
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint16_t bcdUSB;
+    uint8_t bDeviceClass;
+    uint8_t bDeviceSubClass;
+    uint8_t bDeviceProtocol;
+    uint8_t bMaxPacketSize0;
+    uint16_t idVendor;
+    uint16_t idProduct;
+    uint16_t bcdDevice;
+    uint8_t iManufacturer;
+    uint8_t iProduct;
+    uint8_t iSerialNumber;
+    uint8_t bNumConfigurations;
 } usb_device_descriptor_t;
 
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint16_t wData;
+typedef struct __attribute__((packed))
+{
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint16_t wData;
 } usb_langid_descriptor_t;
 
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint16_t wTotalLength;
-  uint8_t bNumInterfaces;
-  uint8_t bConfigurationValue;
-  uint8_t iConfiguration;
-  uint8_t bmAttributes;
-  uint8_t bMaxPower;
+typedef struct __attribute__((packed))
+{
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint16_t wTotalLength;
+    uint8_t bNumInterfaces;
+    uint8_t bConfigurationValue;
+    uint8_t iConfiguration;
+    uint8_t bmAttributes;
+    uint8_t bMaxPower;
 } usb_config_descriptor_t;
 
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bInterfaceNumber;
-  uint8_t bAlternateSetting;
-  uint8_t bNumEndpoints;
-  uint8_t bInterfaceClass;
-  uint8_t bInterfaceSubClass;
-  uint8_t bInterfaceProtocol;
-  uint8_t iInterface;
+typedef struct __attribute__((packed))
+{
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint8_t bInterfaceNumber;
+    uint8_t bAlternateSetting;
+    uint8_t bNumEndpoints;
+    uint8_t bInterfaceClass;
+    uint8_t bInterfaceSubClass;
+    uint8_t bInterfaceProtocol;
+    uint8_t iInterface;
 } usb_interface_descriptor_t;
 
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bFirstInterface;
-  uint8_t bInterfaceCount;
-  uint8_t bFunctionClass;
-  uint8_t bFunctionSubClass;
-  uint8_t bFunctionProtocol;
-  uint8_t iFunction;
+typedef struct __attribute__((packed))
+{
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint8_t bFirstInterface;
+    uint8_t bInterfaceCount;
+    uint8_t bFunctionClass;
+    uint8_t bFunctionSubClass;
+    uint8_t bFunctionProtocol;
+    uint8_t iFunction;
 } usb_interface_assoc_descriptor_t;
 
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bEndpointAddress;
-  uint8_t bmAttributes;
-  uint16_t wMaxPacketSize;
-  uint8_t bInterval;
+typedef struct __attribute__((packed))
+{
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint8_t bEndpointAddress;
+    uint8_t bmAttributes;
+    uint16_t wMaxPacketSize;
+    uint8_t bInterval;
 } usb_endpoint_descriptor_t;
 
-typedef enum {
-  USB_LANGID_ENGLISH_US = 0x409,
+typedef enum
+{
+    USB_LANGID_ENGLISH_US = 0x409,
 } usb_language_id_t;
 
-typedef struct {
-  const char *manufacturer;
-  const char *product;
-  const char *serial_number;
-  const char *interface;
+typedef struct
+{
+    const char* manufacturer;
+    const char* product;
+    const char* serial_number;
+    const char* interface;
 } usb_dev_string_table_t;
 
-typedef struct {
-  uint8_t device_class;
-  uint8_t device_subclass;
-  uint8_t device_protocol;
-  uint16_t vendor_id;
-  uint16_t product_id;
-  uint16_t release_num;
-  const char *manufacturer;
-  const char *product;
-  const char *serial_number;
-  const char *interface;
-  secbool usb21_enabled;
-  secbool usb21_landing;
+typedef struct
+{
+    uint8_t device_class;
+    uint8_t device_subclass;
+    uint8_t device_protocol;
+    uint16_t vendor_id;
+    uint16_t product_id;
+    uint16_t release_num;
+    const char* manufacturer;
+    const char* product;
+    const char* serial_number;
+    const char* interface;
+    secbool usb21_enabled;
+    secbool usb21_landing;
 } usb_dev_info_t;
 
-typedef enum {
-  USB_IFACE_TYPE_DISABLED = 0,
-  USB_IFACE_TYPE_VCP = 1,
-  USB_IFACE_TYPE_HID = 2,
-  USB_IFACE_TYPE_WEBUSB = 3,
+typedef enum
+{
+    USB_IFACE_TYPE_DISABLED = 0,
+    USB_IFACE_TYPE_VCP = 1,
+    USB_IFACE_TYPE_HID = 2,
+    USB_IFACE_TYPE_WEBUSB = 3,
 } usb_iface_type_t;
 
 #include "usb_hid-defs.h"
 #include "usb_vcp-defs.h"
 #include "usb_webusb-defs.h"
 
-typedef struct {
-  union {
-    usb_hid_state_t hid;
-    usb_vcp_state_t vcp;
-    usb_webusb_state_t webusb;
-  };
-  usb_iface_type_t type;
+typedef struct
+{
+    union
+    {
+        usb_hid_state_t hid;
+        usb_vcp_state_t vcp;
+        usb_webusb_state_t webusb;
+    };
+    usb_iface_type_t type;
 } usb_iface_t;
 
-void usb_init(const usb_dev_info_t *dev_info);
+void usb_init(const usb_dev_info_t* dev_info);
 void usb_deinit(void);
 void usb_start(void);
 void usb_stop(void);
-void usb_msc_init(char *serial, size_t serial_len);
+void usb_msc_init(char* serial, size_t serial_len);
 secbool is_usb_connected(void);
 secbool usb_configured(void);
 void usb_config_3320_detect(void);

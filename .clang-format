@@ -4,7 +4,7 @@ Standard: Auto
 DisableFormat: false
 UseCRLF: false
 UseTab: Never
-ColumnLimit: 110
+ColumnLimit: 120
 IndentWidth: 4
 PPIndentWidth: 2
 AccessModifierOffset: -4
@@ -30,7 +30,9 @@ AlignConsecutiveMacros:
 AlignEscapedNewlines: Left
 AlignOperands: AlignAfterOperator
 AllowAllArgumentsOnNextLine: true
-AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: false
+BinPackParameters: false
 AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
@@ -38,22 +40,21 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AlwaysBreakBeforeMultilineStrings : true
 BraceWrapping:
-  AfterCaseLabel : false
-  AfterClass : true
-  AfterControlStatement : Always
+  AfterCaseLabel: false
+  AfterClass: true
+  AfterControlStatement: false
   AfterEnum: true
-  AfterFunction: true
+  AfterFunction: false
   AfterNamespace: true
   AfterStruct: true
   AfterUnion: true
-  AfterExternBlock: true
-  BeforeCatch: true
-  BeforeElse: true
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
   BeforeLambdaBody: true
-  BeforeWhile: true
-  IndentBraces: false
+  BeforeWhile: false
   SplitEmptyFunction: true
-  SplitEmptyRecord: false
+  SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BreakBeforeBraces: Custom
 IndentAccessModifiers: false
