@@ -5,11 +5,10 @@
   .global reset_handler
   .type reset_handler, STT_FUNC
 reset_handler:
+  // cpsid if
+  bl SystemInit
 
-  cpsid if
-  ldr r0, =0xE000ED08       // r0 = VTOR address
-  ldr r1, =_vector_offset   // r1 = FLASH_APP_START
-  str r1, [r0]              // assign
+  /* Vector table already at 0x08000000, no need to rewrite VTOR */
 
   ldr r0, =_estack      // r0 = stack pointer
   msr msp, r0           // set stack pointer
@@ -34,9 +33,11 @@ reset_handler:
   bl memcpy
 
   // setup the stack protector (see build script "-fstack-protector-all") with an unpredictable value
-  bl rng_get
-  ldr r1, = __stack_chk_guard
-  str r0, [r1]
+  // bl rng_init
+  // bl rng_get
+  // ldr r0, =0xDEADBEEF
+  // ldr r1, =__stack_chk_guard
+  // str r0, [r1]
 
   // enter the application code
   bl main

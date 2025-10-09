@@ -177,8 +177,7 @@ void camera_io_init()
 unsigned char camera_sccb_read_reg(unsigned char reg_addr, unsigned char* data)
 {
     unsigned char ret = 0;
-    if ( HAL_I2C_Mem_Read(i2c_handle_camera, GC2145_ADDR, reg_addr, I2C_MEMADD_SIZE_8BIT, data, 1, 1000) !=
-         HAL_OK )
+    if ( HAL_I2C_Mem_Read(i2c_handle_camera, GC2145_ADDR, reg_addr, I2C_MEMADD_SIZE_8BIT, data, 1, 1000) != HAL_OK )
     {
         ret = 1;
     }
@@ -314,7 +313,7 @@ int camera_init(void)
 {
 
     i2c_handle_camera = &i2c_handles[i2c_find_channel_by_device(I2C_CAMERA)];
-    i2c_init_by_device(I2C_CAMERA);
+     i2c_init_by_device(I2C_CAMERA);
     if ( !camera_is_online() )
     {
         return -1;

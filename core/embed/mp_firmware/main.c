@@ -52,6 +52,7 @@
 #include "random_delays.h"
 #include "systick.h"
 #include "usart.h"
+#include "../trezorhal/common.h"
 #ifdef SYSTEM_VIEW
   #include "systemview.h"
 #endif
@@ -99,10 +100,13 @@ static void __attribute__((unused)) copyflash2sdram(void) {
 }
 
 int main(void) {
+    reset_flags_reset();   // 清楚复标志
     periph_init();           // 初始化外设
     system_clock_config();   // 系统时钟初始化
-    SystemCoreClockUpdate(); // 设置系统时钟
     dwt_init();              // 初始化DWT延时
+    cpu_cache_enable();
+    sdram_init();
+
 
     // mpu_config_boardloader(sectrue, sectrue); // boardloader 允许访问，禁止执行
     // mpu_config_bootloader(sectrue, sectrue);  // bootloader 允许访问，禁止执行
@@ -113,20 +117,19 @@ int main(void) {
     // disable all external communication or user input irq
     // will be re-enabled later by calling their init function
     // bluetooth uart
-    HAL_NVIC_DisableIRQ(UART4_IRQn);
-    HAL_NVIC_ClearPendingIRQ(UART4_IRQn);
+    // HAL_NVIC_DisableIRQ(UART4_IRQn);
+    // HAL_NVIC_ClearPendingIRQ(UART4_IRQn);
     // bluetooth spi
-    HAL_NVIC_DisableIRQ(SPI2_IRQn);
-    HAL_NVIC_ClearPendingIRQ(SPI2_IRQn);
-    HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
-    HAL_NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
+    // HAL_NVIC_DisableIRQ(SPI2_IRQn);
+    // HAL_NVIC_ClearPendingIRQ(SPI2_IRQn);
+    // HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+    // HAL_NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
     // usb
-    HAL_NVIC_DisableIRQ(OTG_HS_IRQn);
-    HAL_NVIC_ClearPendingIRQ(OTG_HS_IRQn);
+    // HAL_NVIC_DisableIRQ(OTG_HS_IRQn);
+    // HAL_NVIC_ClearPendingIRQ(OTG_HS_IRQn);
 
     // re-enable global irq
-    __enable_irq();
-    __enable_fault_irq();
+
 
     lcd_init();
     display_clear();
@@ -134,13 +137,17 @@ int main(void) {
     display_backlight(128);
     touch_init();
 
-    // lcd_ltdc_dsi_disable();
-    // sdram_reinit();
-    // // lcd_para_init(DISPLAY_RESX, DISPLAY_RESY, LCD_PIXEL_FORMAT_RGB565);
-    // lcd_ltdc_dsi_enable();
-    // lcd_pwm_init();
-    // touch_init();
-    // adc_init();
+    lcd_ltdc_dsi_disable();
+    sdram_reinit();
+    // lcd_para_init(DISPLAY_RESX, DISPLAY_RESY, LCD_PIXEL_FORMAT_RGB565);
+    lcd_ltdc_dsi_enable();
+    lcd_pwm_init();
+    touch_init();
+    adc_init();
+
+
+    display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST VERSION", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
+    hal_delay(10000);
 
     // ensure_emmcfs(emmc_fs_init(), "emmc_fs_init");
     // ensure_emmcfs(emmc_fs_mount(true, false), "emmc_fs_mount");
@@ -157,7 +164,7 @@ int main(void) {
     // random_delays_init();
     // collect_hw_entropy(); // 收集硬件熵
 
-    motor_init();
+    // motor_init();
     // thd89_init();
     camera_init();
     fingerprint_init();
@@ -202,7 +209,8 @@ int main(void) {
 
     display_clear();
     display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST FIRMWARE", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
-
+    hal_delay(5000);
+    
     // TODO: 测试
     __BKPT(0);
 

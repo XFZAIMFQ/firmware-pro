@@ -772,7 +772,7 @@ int main(void) {
 #endif
 
     // STAY_REASON stay_reason;       // 状态原因
-    // image_header hdr;              // 镜像头
+    // image_header hdr;              // image 头
     // secbool hdr_valid = secfalse;  // 镜像验证标志
     // secbool code_valid = secfalse; // 代码段验证标志
     // // 决定启动目标

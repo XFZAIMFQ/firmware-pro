@@ -699,7 +699,7 @@ if PRODUCTION_MODEL == 'H':
         '-std=gnu99 -Wall -Wdouble-promotion -Wpointer-arith -Wno-missing-braces -fno-common '
         '-fsingle-precision-constant -fdata-sections -ffunction-sections '
         '-ffreestanding '
-        '-fstack-protector-all '
+        # '-fstack-protector-all '
         + CPU_CCFLAGS + CCFLAGS_MOD,
         CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
         LINKFLAGS='-T embed/mp_firmware/memory_H%s.ld -Wl,--gc-sections -Wl,-Map=build/mp_firmware/firmware.map -Wl,--warn-common '

@@ -824,11 +824,11 @@ int main(void) {
     ensure_emmcfs(emmc_fs_init(), "emmc_fs_init");              // 初始化eMMC文件系统
     ensure_emmcfs(emmc_fs_mount(true, false), "emmc_fs_mount"); // 挂载eMMC文件系统
     // v3.0A之后的版本没有QSPI Flash
-    if ( get_hw_ver() < HW_VER_3P0A ) {
-        qspi_flash_init();
-        qspi_flash_config();
-        qspi_flash_memory_mapped();
-    }
+    // if ( get_hw_ver() < HW_VER_3P0A ) {
+    //     qspi_flash_init();
+    //     qspi_flash_config();
+    //     qspi_flash_memory_mapped();
+    // }
 
     // bt/pm
     ble_usart_init(); // 初始化蓝牙串口

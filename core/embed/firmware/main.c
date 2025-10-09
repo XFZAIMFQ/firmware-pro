@@ -101,9 +101,9 @@ int main(void) {
     SystemCoreClockUpdate(); // 设置系统时钟
     dwt_init();              // 初始化DWT延时
 
-    mpu_config_boardloader(sectrue, sectrue); // boardloader 允许访问，禁止执行
-    mpu_config_bootloader(sectrue, sectrue);  // bootloader 允许访问，禁止执行
-    mpu_config_firmware(sectrue, sectrue);     // firmware 允许访问，允许执行
+    mpu_config_boardloader(sectrue, secfalse); // boardloader 允许访问，禁止执行
+    mpu_config_bootloader(sectrue, secfalse); // bootloader 允许访问，禁止执行
+    mpu_config_firmware(sectrue, sectrue);  // firmware 允许访问，允许执行
     mpu_config_base(); // base config last as it contains deny access layers and mpu may already running
     mpu_ctrl(sectrue); // ensure enabled
 
@@ -158,7 +158,7 @@ int main(void) {
     display_clear();
     pendsv_init();
 
-    device_test(false);
+    // device_test(false);
     // device_burnin_test(false);
 
     // device_para_init();

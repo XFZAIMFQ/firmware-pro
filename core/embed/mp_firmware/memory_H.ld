@@ -41,6 +41,9 @@ _flash_end = ORIGIN(FLASH) + LENGTH(FLASH);
 _heap_start = ADDR(.heap);
 _heap_end = ADDR(.heap) + SIZEOF(.heap);
 
+/* Provide a simple code length metric (vector_table + code + rodata + data) */
+_codelen = SIZEOF(.flash) + SIZEOF(.data);
+
 _flash2_load_addr = LOADADDR(.flash2);
 _flash2_start = ORIGIN(FW_RAM);
 _flash2_end = _flash2_start + SIZEOF(.flash2);
@@ -69,10 +72,11 @@ SECTIONS {
 
   .flash : ALIGN(512) {
     _stext = .;
-    KEEP(*(.vector_table_ex));
-    . = ALIGN(1024);
-    _vector_offset = .;
+    /* Place the real vector table at the very start of FLASH so CPU reset fetches correct SP & PC */
+    _vector_offset = .; /* now equals FLASH ORIGIN (0x08000000) */
     KEEP(*(.vector_table));
+    /* Extended/duplicate vector table no longer needed for direct boot; comment out to avoid shifting */
+    /* KEEP(*(.vector_table_ex)); */
     . = ALIGN(4);
     *(.text*);
     . = ALIGN(4);
