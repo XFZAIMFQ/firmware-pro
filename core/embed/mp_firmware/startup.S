@@ -8,8 +8,8 @@ reset_handler:
 
   cpsid if
   ldr r0, =0xE000ED08       // r0 = VTOR address
-  ldr r1, =_vector_offset  // r1 = FLASH_APP_START
-  str r1, [r0]            // assign
+  ldr r1, =_vector_offset   // r1 = FLASH_APP_START
+  str r1, [r0]              // assign
 
   ldr r0, =_estack      // r0 = stack pointer
   msr msp, r0           // set stack pointer

@@ -535,7 +535,7 @@ static bool __attribute__((unused)) _motor_test(void) {
     }
 }
 
-static bool _camera_test(void) {
+static bool __attribute__((unused)) _camera_test(void) {
     int ui_res = 0;
     if ( !camera_is_online() ) {
         return false;
@@ -663,7 +663,7 @@ void device_test(bool force) {
 
     while ( !touch_click() ) {}
 
-    ui_test_input();
+    // ui_test_input();
 
     display_clear();
 

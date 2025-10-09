@@ -77,6 +77,7 @@
 #endif
 #include "cm_backtrace.h"
 #include "version.h"
+#include "lowlevel.h"
 
 // from util.s
 extern void shutdown_privileged(void);
@@ -98,14 +99,16 @@ static void __attribute__((unused)) copyflash2sdram(void) {
 }
 
 int main(void) {
+    periph_init();           // 初始化外设
+    system_clock_config();   // 系统时钟初始化
     SystemCoreClockUpdate(); // 设置系统时钟
     dwt_init();              // 初始化DWT延时
 
-    mpu_config_boardloader(sectrue, sectrue); // boardloader 允许访问，禁止执行
-    mpu_config_bootloader(sectrue, sectrue);  // bootloader 允许访问，禁止执行
-    mpu_config_firmware(sectrue, sectrue);     // firmware 允许访问，允许执行
-    mpu_config_base(); // base config last as it contains deny access layers and mpu may already running
-    mpu_ctrl(sectrue); // ensure enabled
+    // mpu_config_boardloader(sectrue, sectrue); // boardloader 允许访问，禁止执行
+    // mpu_config_bootloader(sectrue, sectrue);  // bootloader 允许访问，禁止执行
+    // mpu_config_firmware(sectrue, sectrue);     // firmware 允许访问，允许执行
+    // mpu_config_base(); // base config last as it contains deny access layers and mpu may already running
+    // mpu_ctrl(sectrue); // ensure enabled
 
     // disable all external communication or user input irq
     // will be re-enabled later by calling their init function
@@ -125,30 +128,36 @@ int main(void) {
     __enable_irq();
     __enable_fault_irq();
 
-    lcd_ltdc_dsi_disable();
-    sdram_reinit();
-    // lcd_para_init(DISPLAY_RESX, DISPLAY_RESY, LCD_PIXEL_FORMAT_RGB565);
-    lcd_ltdc_dsi_enable();
+    lcd_init();
+    display_clear();
     lcd_pwm_init();
+    display_backlight(128);
     touch_init();
-    adc_init();
 
-    ensure_emmcfs(emmc_fs_init(), "emmc_fs_init");
-    ensure_emmcfs(emmc_fs_mount(true, false), "emmc_fs_mount");
+    // lcd_ltdc_dsi_disable();
+    // sdram_reinit();
+    // // lcd_para_init(DISPLAY_RESX, DISPLAY_RESY, LCD_PIXEL_FORMAT_RGB565);
+    // lcd_ltdc_dsi_enable();
+    // lcd_pwm_init();
+    // touch_init();
+    // adc_init();
+
+    // ensure_emmcfs(emmc_fs_init(), "emmc_fs_init");
+    // ensure_emmcfs(emmc_fs_mount(true, false), "emmc_fs_mount");
     // if ( get_hw_ver() < HW_VER_3P0A ) {
     //     qspi_flash_init();
     //     qspi_flash_config();
     //     qspi_flash_memory_mapped();
     // }
-    cm_backtrace_init("firmware", hw_ver_to_str(get_hw_ver()), ONEKEY_VERSION);
+    // cm_backtrace_init("firmware", hw_ver_to_str(get_hw_ver()), ONEKEY_VERSION);
 
-    ble_usart_init();
-    spi_slave_init();
+    // ble_usart_init();
+    // spi_slave_init();
 
-    random_delays_init();
+    // random_delays_init();
     // collect_hw_entropy(); // 收集硬件熵
 
-    // motor_init();
+    motor_init();
     // thd89_init();
     camera_init();
     fingerprint_init();
@@ -158,7 +167,7 @@ int main(void) {
     display_clear();
     pendsv_init();
 
-    device_test(false);
+    // device_test(false);
     // device_burnin_test(false);
 
     // device_para_init();

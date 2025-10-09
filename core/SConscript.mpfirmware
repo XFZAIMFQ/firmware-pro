@@ -366,7 +366,7 @@ if LVGL_UI == '1':
 
     LVGL_BINDING_DIR = 'vendor/lvgl_mp'
     LVGL_DIR = f'{LVGL_BINDING_DIR}/lvgl'
-    LVGL_BUILD = 'build/firmware'
+    LVGL_BUILD = 'build/mp_firmware'
     INC = f' -Iembed/lvgl'
     LVGL_PP = f'{LVGL_BUILD}/lvgl.pp.c'
     LVGL_MPY = f'{LVGL_BUILD}/lv_mpy.c'
@@ -446,13 +446,13 @@ if PRODUCTION_MODEL == 'H':
     ]
 
     SOURCE_FIRMWARE = [
-        'embed/firmware/bl_check.c',
-        'embed/firmware/delay.c',
-        'embed/firmware/header.S',
-        'embed/firmware/main.c',
-        'embed/firmware/mphalport.c',
-        'embed/firmware/nlrthumb.c',
-        'embed/firmware/startup.S',
+        'embed/mp_firmware/bl_check.c',
+        'embed/mp_firmware/delay.c',
+        'embed/mp_firmware/header.S',
+        'embed/mp_firmware/main.c',
+        'embed/mp_firmware/mphalport.c',
+        'embed/mp_firmware/nlrthumb.c',
+        'embed/mp_firmware/startup.S',
     ]
 
     SOURCE_CM_BACKTRACE = [
@@ -504,6 +504,7 @@ if PRODUCTION_MODEL == 'H':
         'embed/trezorhal/jpeg_dma.c',
         'embed/trezorhal/stm32_it_handler.c',
         'embed/trezorhal/low_power.c',
+        'embed/trezorhal/lowlevel.c',
         'embed/trezorhal/util.s',
         'embed/trezorhal/vectortable.s',
     ]
@@ -531,13 +532,13 @@ else:
     ]
 
     SOURCE_FIRMWARE = [
-        'embed/firmware/bl_check.c',
-        'embed/firmware/delay.c',
-        'embed/firmware/header.S',
-        'embed/firmware/main.c',
-        'embed/firmware/mphalport.c',
-        'embed/firmware/nlrthumb.c',
-        'embed/firmware/startup.S',
+        'embed/mp_firmware/bl_check.c',
+        'embed/mp_firmware/delay.c',
+        'embed/mp_firmware/header.S',
+        'embed/mp_firmware/main.c',
+        'embed/mp_firmware/mphalport.c',
+        'embed/mp_firmware/nlrthumb.c',
+        'embed/mp_firmware/startup.S',
     ]
 
     SOURCE_TREZORHAL = [
@@ -637,7 +638,7 @@ if FEATURE_FLAGS["SYSTEM_VIEW"]:
         'embed/segger/SEGGER/SEGGER_RTT.c',
         'embed/segger/SEGGER/SEGGER_RTT_ASM_ARMv7M.S',
         'embed/segger/SEGGER/Syscalls/SEGGER_RTT_Syscalls_GCC.c',
-        'embed/firmware/systemview.c',
+        'embed/mp_firmware/systemview.c',
     ]
     CPPPATH_MOD += [
         'embed/segger/SEGGER/',
@@ -701,12 +702,12 @@ if PRODUCTION_MODEL == 'H':
         '-fstack-protector-all '
         + CPU_CCFLAGS + CCFLAGS_MOD,
         CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
-        LINKFLAGS='-T embed/firmware/memory_H%s.ld -Wl,--gc-sections -Wl,-Map=build/firmware/firmware.map -Wl,--warn-common '
+        LINKFLAGS='-T embed/mp_firmware/memory_H%s.ld -Wl,--gc-sections -Wl,-Map=build/mp_firmware/firmware.map -Wl,--warn-common '
         '-Wl,-L embed/fp_sensor_wrapper -Wl,-whole-archive -Wl,-lFpalgorithm -Wl,-no-whole-archive' % LD_VARIANT,
         CPPPATH=[
             '.',
             'embed/rust',
-            'embed/firmware',
+            'embed/mp_firmware',
             'embed/cm_backtrace',
             'embed/trezorhal',
             'embed/trezorhal/fatfs',
@@ -1030,13 +1031,13 @@ protobuf_blobs = env.Command(
         'rust/proto_wire.data',
     ],
     source=PROTO_SOURCES,
-    action='$PB2PY --bitcoin-only=%s --blob-outdir ${TARGET.dir} $SOURCES --qstr-defs build/firmware/genhdr/qstrdefs.generated.h' % BITCOIN_ONLY,
+    action='$PB2PY --bitcoin-only=%s --blob-outdir ${TARGET.dir} $SOURCES --qstr-defs build/mp_firmware/genhdr/qstrdefs.generated.h' % BITCOIN_ONLY,
 )
 env.Depends(protobuf_blobs, qstr_generated)
 
 RUST_PROFILE = 'release'
 RUST_LIB = 'trezor_lib'
-RUST_LIBDIR = f'build/firmware/rust/{RUST_TARGET}/{RUST_PROFILE}'
+RUST_LIBDIR = f'build/mp_firmware/rust/{RUST_TARGET}/{RUST_PROFILE}'
 RUST_LIBPATH = f'{RUST_LIBDIR}/lib{RUST_LIB}.a'
 
 def cargo_build():
@@ -1058,7 +1059,7 @@ def cargo_build():
 
     cargo_opts = [
         f'--target={RUST_TARGET}',
-        f'--target-dir=../../build/firmware/rust',
+        f'--target-dir=../../build/mp_firmware/rust',
         '--no-default-features',
         '--features ' + ','.join(features),
         '-Z build-std=core',
@@ -1130,7 +1131,7 @@ program_lib = zbar_env.Command(
 
 obj_program.extend(
     env.Command(
-        target='embed/firmware/vendorheader.o',
+        target='embed/mp_firmware/vendorheader.o',
         source=VENDORHEADER,
         action='$OBJCOPY -I binary -O elf32-littlearm -B arm'
         ' --rename-section .data=.vendorheader,alloc,load,readonly,contents'
@@ -1138,8 +1139,8 @@ obj_program.extend(
 
 obj_program.extend(
     env.Command(
-        target='embed/firmware/bootloader.o',
-        source='embed/firmware/bootloader.bin',
+        target='embed/mp_firmware/bootloader.o',
+        source='embed/mp_firmware/bootloader.bin',
         action='$OBJCOPY -I binary -O elf32-littlearm -B arm'
         ' --rename-section .data=.bootloader'
         ' $SOURCE $TARGET', ))
@@ -1147,7 +1148,7 @@ obj_program.extend(
 env.Depends(obj_program, qstr_generated)
 
 program_elf = env.Command(
-    target='firmware.elf',
+    target='mp_firmware.elf',
     source=[obj_program, program_lib],
     action=
     '$LINK -o $TARGET $CCFLAGS $CFLAGS $SOURCES $LINKFLAGS -lc_nano -lnosys -lm -lgcc',
@@ -1166,7 +1167,7 @@ else:
     raise ValueError('Unknown Trezor model')
 
 program_bin = env.Command(
-    target='firmware.bin',
+    target='mp_firmware.bin',
     source=program_elf,
     action=action_bin,
 )

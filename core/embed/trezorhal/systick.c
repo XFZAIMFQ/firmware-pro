@@ -76,77 +76,79 @@ void SysTick_Handler(void) {
 
 
 // clang-format off
-#define DEMCR                     (*(volatile uint32_t*) (0xE000EDFCuL))   // Debug Exception and Monitor Control Register
-#define TRACEENA_BIT              (1uL << 24)                                   // Trace enable bit
-#define DWT_CTRL                  (*(volatile uint32_t*) (0xE0001000uL))   // DWT Control Register
+#define DEMCR                     (*(volatile uint32_t*) (0xE000EDFCuL))    // Debug Exception and Monitor Control Register
+#define TRACEENA_BIT              (1uL << 24)                               // Trace enable bit
+#define DWT_CTRL                  (*(volatile uint32_t*) (0xE0001000uL))    // DWT Control Register
 #define CYCCNTENA_BIT             (1uL << 0)
 #define DWT_CYCCNT                (*(volatile uint32_t*) (0xE0001004uL))
 // clang-format on
 
 void dwt_init(void) {
-  if ((DEMCR & TRACEENA_BIT) == 0) {
-    DEMCR |= TRACEENA_BIT;
-  }
+    if ( (DEMCR & TRACEENA_BIT) == 0 ) {
+        DEMCR |= TRACEENA_BIT;
+    }
 
-  if ((DWT_CTRL & CYCCNTENA_BIT) == 0) {  // Cycle counter not enabled?
-    DWT_CTRL |= CYCCNTENA_BIT;            // Enable Cycle counter
-  }
-  DWT_CYCCNT = 0;
+    if ( (DWT_CTRL & CYCCNTENA_BIT) == 0 ) { // Cycle counter not enabled?
+        DWT_CTRL |= CYCCNTENA_BIT;           // Enable Cycle counter
+    }
+    DWT_CYCCNT = 0;
 }
 
 // 400MHZ  min 2.5ns,max 10.73s
 void dwt_delay_ns(uint32_t delay_ns) {
-  DWT_CYCCNT = 0;
-  uint32_t start = DWT_CYCCNT;
-  uint32_t count = (delay_ns * (SystemCoreClock / 100000000)) / 10;
-  while ((DWT_CYCCNT - start) < count)
-    ;
+    DWT_CYCCNT = 0;
+    uint32_t start = DWT_CYCCNT;
+    uint32_t count = (delay_ns * (SystemCoreClock / 100000000)) / 10;
+    while ( (DWT_CYCCNT - start) < count )
+        ;
 }
 
 void dwt_delay_us(uint32_t delay_us) {
-  DWT_CYCCNT = 0;
-  uint32_t start = DWT_CYCCNT;
-  uint32_t count = delay_us * (SystemCoreClock / 1000000);
-  while ((DWT_CYCCNT - start) < count)
-    ;
+    DWT_CYCCNT = 0;
+    uint32_t start = DWT_CYCCNT;
+    uint32_t count = delay_us * (SystemCoreClock / 1000000);
+    while ( (DWT_CYCCNT - start) < count )
+        ;
 }
 
 static void dwt_delay_1ms(void) {
-  DWT_CYCCNT = 0;
-  uint32_t start = DWT_CYCCNT;
-  uint32_t count = SystemCoreClock / 1000;
-  while ((DWT_CYCCNT - start) < count)
-    ;
+    DWT_CYCCNT = 0;
+    uint32_t start = DWT_CYCCNT;
+    uint32_t count = SystemCoreClock / 1000;
+    while ( (DWT_CYCCNT - start) < count )
+        ;
 }
 
 void dwt_delay_ms(uint32_t delay_ms) {
-  for (uint32_t i = 0; i < delay_ms; i++) {
-    dwt_delay_1ms();
-  }
+    for ( uint32_t i = 0; i < delay_ms; i++ ) {
+        dwt_delay_1ms();
+    }
 }
 
 static uint32_t accumulated_time_ms = 0;
 static uint32_t last_tick = 0;
 
 void dwt_reset(void) {
-  DWT_CYCCNT = 0;
-  accumulated_time_ms = 0;
-  last_tick = 0;
+    DWT_CYCCNT = 0;
+    accumulated_time_ms = 0;
+    last_tick = 0;
 }
 
-uint32_t dwt_get_cycle(void) { return DWT_CYCCNT; }
+uint32_t dwt_get_cycle(void) {
+    return DWT_CYCCNT;
+}
 
-uint32_t dwt_get_ms(void) { return accumulated_time_ms; }
+uint32_t dwt_get_ms(void) {
+    return accumulated_time_ms;
+}
 
 bool dwt_is_timeout(uint32_t timeout) {
-  uint32_t current = DWT_CYCCNT;
-  uint32_t elapsed = (current >= last_tick)
-                         ? (current - last_tick)
-                         : (0xFFFFFFFF - last_tick + current + 1);
-  uint32_t elapsed_time_ms = elapsed / (SystemCoreClock / 1000);
-  if (elapsed_time_ms > 0) {
-    accumulated_time_ms += elapsed_time_ms;
-    last_tick = current;
-  }
-  return accumulated_time_ms >= timeout;
+    uint32_t current = DWT_CYCCNT;
+    uint32_t elapsed = (current >= last_tick) ? (current - last_tick) : (0xFFFFFFFF - last_tick + current + 1);
+    uint32_t elapsed_time_ms = elapsed / (SystemCoreClock / 1000);
+    if ( elapsed_time_ms > 0 ) {
+        accumulated_time_ms += elapsed_time_ms;
+        last_tick = current;
+    }
+    return accumulated_time_ms >= timeout;
 }

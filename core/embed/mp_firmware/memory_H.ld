@@ -3,11 +3,11 @@
 ENTRY(reset_handler)
 
 MEMORY {
-  FLASH  (rx)  : ORIGIN = 0x08060000, LENGTH = 1536K
-  /* FLASH  (rx)  : ORIGIN = 0x08000000, LENGTH = 1536K */
-  FLASH2 (r)   : ORIGIN = 0x90000000, LENGTH = 4096K
-  AXIRAM (wal) : ORIGIN = 0x24000000, LENGTH = 512K
-  SRAM   (wal) : ORIGIN = 0x20000000, LENGTH = 128K
+  /* FLASH  (rx)  : ORIGIN = 0x08060000, LENGTH = 1536K */
+  FLASH   (rx)  : ORIGIN = 0x08000000, LENGTH = 1536K
+  FLASH2  (r)   : ORIGIN = 0x90000000, LENGTH = 4096K
+  AXIRAM  (wal) : ORIGIN = 0x24000000, LENGTH = 512K
+  SRAM    (wal) : ORIGIN = 0x20000000, LENGTH = 128K
   SRAM1   (wal) : ORIGIN = 0x30000000, LENGTH = 128K
   SRAM2   (wal) : ORIGIN = 0x30020000, LENGTH = 128K
   /* SRAM3 is used for DMA */
@@ -35,7 +35,7 @@ sram_end = ORIGIN(SRAM) + LENGTH(SRAM);
 _ram_start = sram_start;
 _ram_end = sram_end;
 
-_codelen = LENGTH(FLASH) - SIZEOF(.vendorheader) - SIZEOF(.header) + SIZEOF(.flash2);
+/* _codelen = LENGTH(FLASH) - SIZEOF(.vendorheader) - SIZEOF(.header) + SIZEOF(.flash2); */
 _flash_start = ORIGIN(FLASH);
 _flash_end = ORIGIN(FLASH) + LENGTH(FLASH);
 _heap_start = ADDR(.heap);
@@ -46,17 +46,19 @@ _flash2_start = ORIGIN(FW_RAM);
 _flash2_end = _flash2_start + SIZEOF(.flash2);
 
 SECTIONS {
-  .vendorheader : ALIGN(4) {
+  
+  /* .vendorheader : ALIGN(4) {
     KEEP(*(.vendorheader))
   } >FLASH AT>FLASH
 
   .header : ALIGN(4) {
     KEEP(*(.header));
-  } >FLASH AT>FLASH
+  } >FLASH AT>FLASH 
+  */
 
   .flash2 : ALIGN(512) {
-    build/firmware/frozen_mpy.o(.rodata*);
-    build/firmware/vendor/secp256k1-zkp/src/secp256k1.o(.rodata*);
+    build/mp_firmware/frozen_mpy.o(.rodata*);
+    build/mp_firmware/vendor/secp256k1-zkp/src/secp256k1.o(.rodata*);
     . = ALIGN(512);
   } >FW_RAM AT>FLASH2
 

@@ -12,6 +12,7 @@ BOARDLOADER_BUILD_DIR 		= $(BUILD_DIR)/boardloader
 BOAR_DEV_REFLASH_BUILD_DIR  = $(BUILD_DIR)/boardloader_reflash_dev
 BOOTLOADER_BUILD_DIR  		= $(BUILD_DIR)/bootloader
 FIRMWARE_BUILD_DIR   		= $(BUILD_DIR)/firmware
+MP_FIRMWARE_BUILD_DIR   	= $(BUILD_DIR)/mp_firmware
 UNIX_BUILD_DIR        		= $(BUILD_DIR)/unix
 RUST_BUILD_DIR        		= $(BUILD_DIR)/rust
 
@@ -43,6 +44,7 @@ BOARDLOADER_START   = 0x08000000
 BOOTLOADER_START    = 0x08020000
 FIRMWARE_P1_START   = 0x08060000
 FIRMWARE_P2_START   = 0x90000000
+MP_FIRMWARE_START	= 0x08000000
 
 BOARDLOADER_MAXSIZE = 49152
 BOOTLOADER_MAXSIZE  = 131072
@@ -193,6 +195,11 @@ build_firmware: templates build_cross ## build firmware with frozen modules
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" PRODUCTION_MODEL="$(PRODUCTION_MODEL)" PYOPT="$(PYOPT)" BITCOIN_ONLY="$(BITCOIN_ONLY)" UI2="$(UI2)" USE_THD89="$(USE_THD89)" $(FIRMWARE_BUILD_DIR)/firmware.bin
 	cp $(FIRMWARE_BUILD_DIR)/firmware.bin $(FIRMWARE_BUILD_DIR)/$(FIRMWARE_BUILD_NAME).bin
 
+build_mp_firmware: CFLAGS += -DBUILD_ID='\"$(FIRMWARE_BUILD_ID)\"'
+build_mp_firmware: CFLAGS += -DSCM_REVISION='\"$(SCM_REVISION)\"'
+build_mp_firmware: templates build_cross ## build micropython firmware with frozen modules
+	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" PRODUCTION_MODEL="$(PRODUCTION_MODEL)" PYOPT="$(PYOPT)" BITCOIN_ONLY="$(BITCOIN_ONLY)" UI2="$(UI2)" USE_THD89="$(USE_THD89)" $(MP_FIRMWARE_BUILD_DIR)/mp_firmware.bin
+
 build_unix: templates ## build unix port
 	$(SCONS) CFLAGS="$(CFLAGS)" $(UNIX_BUILD_DIR)/trezor-emu-core $(UNIX_PORT_OPTS) TREZOR_MODEL="$(TREZOR_MODEL)" BITCOIN_ONLY="$(BITCOIN_ONLY)" TREZOR_EMULATOR_ASAN="$(ADDRESS_SANITIZER)" UI2="$(UI2)" UNAME_S="$(UNAME_S)" CURRENT_DIR="$(CURRENT_DIR)"
 
@@ -256,6 +263,9 @@ flash_firmware_jlink: $(FIRMWARE_BUILD_DIR)/firmware.bin ## flash firmware using
 	embed/debugger_scripts/jlink/jlink_write.sh $<.p2.bin $(FIRMWARE_P2_START)
 	rm $<.p1.bin
 	rm $<.p2.bin
+
+flash_mp_firmware_jlink: $(MP_FIRMWARE_BUILD_DIR)/mp_firmware.bin ## flash micropython firmware using JLink. file names must end in .bin for JLink
+	embed/debugger_scripts/jlink/jlink_write.sh $< $(MP_FIRMWARE_START)
 
 dump_firmware_jlink:
 	embed/debugger_scripts/jlink/jlink_read.sh $(FIRMWARE_BUILD_DIR)/firmware.readback.p1.bin $(FIRMWARE_P1_START) 0x180000

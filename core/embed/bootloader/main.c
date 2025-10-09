@@ -76,7 +76,7 @@ static bool usb_tiny_enable = false;
 // 请勿在不了解情况时使用此配置
 // 警告：这仅供开发者设置模拟配置之用！
 // 对SE的配置是永久性的，无法重置！
-static void write_dev_dummy_serial() {
+static void __attribute__((unused)) write_dev_dummy_serial() {
     if ( !device_serial_set() ) {
         // device_set_serial("TCTestSerialNumberXXXXXXXXXXXXX");
         device_set_serial("PRA50I0000 ES");
@@ -867,12 +867,12 @@ int main(void) {
     // if (!device_serial_set()) {
     //   write_dev_dummy_serial();
     // }
-    UNUSED(write_dev_dummy_serial);
+    // UNUSED(write_dev_dummy_serial);
 
     // if (!se_has_cerrificate()) {
     //   write_dev_dummy_cert();
     // }
-    UNUSED(write_dev_dummy_cert);
+    // UNUSED(write_dev_dummy_cert);
 
     // if(!device_overwrite_serial("PRA50I0000 QA"))
     // {
@@ -893,9 +893,9 @@ int main(void) {
 
 #endif
 
-    if ( !enter_boot_forced() ) {
-        check_firmware_from_file(USB_IFACE_NULL);
-    }
+    // if ( !enter_boot_forced() ) {
+    //     check_firmware_from_file(USB_IFACE_NULL);
+    // }
 
     vendor_header vhdr;
     image_header hdr;
@@ -903,79 +903,87 @@ int main(void) {
     secbool hdr_valid = secfalse;
     secbool code_valid = secfalse;
 
-    BOOT_TARGET boot_target = decide_boot_target(&vhdr, &hdr, &vhdr_valid, &hdr_valid, &code_valid);
+    // BOOT_TARGET boot_target = decide_boot_target(&vhdr, &hdr, &vhdr_valid, &hdr_valid, &code_valid);
     
-    // TODO: 跳过检查
-    boot_target = BOOT_TARGET_NORMAL;
-    vhdr_valid = sectrue;
-    hdr_valid = sectrue;
+    // // TODO: 跳过检查
+    // boot_target = BOOT_TARGET_NORMAL;
+    // vhdr_valid = sectrue;
+    // hdr_valid = sectrue;
 
 
-    if ( boot_target == BOOT_TARGET_BOOTLOADER ) {
-        display_clear(); // 清屏
+    // if ( boot_target == BOOT_TARGET_BOOTLOADER ) {
+    //     display_clear(); // 清屏
 
-        // 判断 vendor_header 与 image_header 是否有效
-        if ( sectrue == vhdr_valid && sectrue == hdr_valid ) {
-            ui_bootloader_first(&hdr); // 显示bootloader首页
-            // 进入bootloader循环
-            if ( bootloader_usb_loop(&vhdr, &hdr) != sectrue ) {
-                return 1;
-            }
-        } else {
-            // 没有有效的固件，直接进入bootloader循环
-            ui_bootloader_first(NULL);
-            if ( bootloader_usb_loop(NULL, NULL) != sectrue ) {
-                return 1;
-            }
-        }
-    } else if ( boot_target == BOOT_TARGET_NORMAL ) {
-        // TODO: 跳过检查
-        // 检查蓝牙密钥
-        // device_verify_ble();
-        // if all VTRUST flags are unset = ultimate trust => skip the procedure
-        // 如果所有VTRUST标志都未设置=终极信任=>跳过该过程
-        // if ( (vhdr.vtrust & VTRUST_ALL) != VTRUST_ALL ) {
-        //     // ui_fadeout();  // no fadeout - we start from black screen
-        //     ui_screen_boot(&vhdr, &hdr);
-        //     ui_fadein();
+    //     // 判断 vendor_header 与 image_header 是否有效
+    //     if ( sectrue == vhdr_valid && sectrue == hdr_valid ) {
+    //         ui_bootloader_first(&hdr); // 显示bootloader首页
+    //         // 进入bootloader循环
+    //         if ( bootloader_usb_loop(&vhdr, &hdr) != sectrue ) {
+    //             return 1;
+    //         }
+    //     } else {
+    //         // 没有有效的固件，直接进入bootloader循环
+    //         ui_bootloader_first(NULL);
+    //         if ( bootloader_usb_loop(NULL, NULL) != sectrue ) {
+    //             return 1;
+    //         }
+    //     }
+    // } else if ( boot_target == BOOT_TARGET_NORMAL ) {
+    //     // TODO: 跳过检查
+    //     // 检查蓝牙密钥
+    //     // device_verify_ble();
+    //     // if all VTRUST flags are unset = ultimate trust => skip the procedure
+    //     // 如果所有VTRUST标志都未设置=终极信任=>跳过该过程
+    //     // if ( (vhdr.vtrust & VTRUST_ALL) != VTRUST_ALL ) {
+    //     //     // ui_fadeout();  // no fadeout - we start from black screen
+    //     //     ui_screen_boot(&vhdr, &hdr);
+    //     //     ui_fadein();
 
-        //     int delay = (vhdr.vtrust & VTRUST_WAIT) ^ VTRUST_WAIT;
-        //     if ( delay > 1 ) {
-        //         while ( delay > 0 ) {
-        //             ui_screen_boot_wait(delay);
-        //             hal_delay(1000);
-        //             delay--;
-        //         }
-        //     } else if ( delay == 1 ) {
-        //         hal_delay(1000);
-        //     }
+    //     //     int delay = (vhdr.vtrust & VTRUST_WAIT) ^ VTRUST_WAIT;
+    //     //     if ( delay > 1 ) {
+    //     //         while ( delay > 0 ) {
+    //     //             ui_screen_boot_wait(delay);
+    //     //             hal_delay(1000);
+    //     //             delay--;
+    //     //         }
+    //     //     } else if ( delay == 1 ) {
+    //     //         hal_delay(1000);
+    //     //     }
 
-        //     if ( (vhdr.vtrust & VTRUST_CLICK) == 0 ) {
-        //         ui_screen_boot_click();
-        //         int counter = 0;
-        //         while ( touch_read() == 0 ) {
-        //             hal_delay(10);
-        //             counter++;
-        //             if ( counter > 200 ) {
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
+    //     //     if ( (vhdr.vtrust & VTRUST_CLICK) == 0 ) {
+    //     //         ui_screen_boot_click();
+    //     //         int counter = 0;
+    //     //         while ( touch_read() == 0 ) {
+    //     //             hal_delay(10);
+    //     //             counter++;
+    //     //             if ( counter > 200 ) {
+    //     //                 break;
+    //     //             }
+    //     //         }
+    //     //     }
+    //     // }
 
-        display_clear();     // 清屏
-        bus_fault_disable(); // 禁用总线故障
+    //     display_clear();     // 清屏
+    //     bus_fault_disable(); // 禁用总线故障
 
-        // enable firmware region
-        // 启用固件区域
-        mpu_config_firmware(sectrue, sectrue); // 允许读写执行
+    //     // enable firmware region
+    //     // 启用固件区域
+    //     mpu_config_firmware(sectrue, sectrue); // 允许读写执行
 
-        display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST BOOTLOADER", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
-        hal_delay(2000);
+    //     display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST BOOTLOADER", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
+    //     hal_delay(2000);
 
-        // jump_to(FIRMWARE_START + vhdr.hdrlen + hdr.hdrlen); // 跳转到固件入口点
-        jump_to(FIRMWARE_START + 2560 + 1024);
-    }
+    //     // jump_to(FIRMWARE_START + vhdr.hdrlen + hdr.hdrlen); // 跳转到固件入口点
+    //     jump_to(FIRMWARE_START + 2560 + 1024);
+    // }
+
+    display_clear();     // 清屏
+    bus_fault_disable(); // 禁用总线故障
+    mpu_config_firmware(sectrue, sectrue); // 允许读写执行
+    display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST BOOTLOADER", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
+    hal_delay(3000);
+    jump_to(FIRMWARE_START + 2560 + 1024);
+
 
     error_shutdown(
         "Internal error", "Boot target invalid", "Tap to restart.", "If the issue persists, contact support."

@@ -282,13 +282,7 @@ secbool se_fp_read(uint32_t offset, void* val_dest, uint32_t len, uint8_t index,
 int se_lite_card_ecdh(const uint8_t* publickey, uint8_t* sessionkey); // lite卡ecdh
 
 secbool se_gen_fido_seed(uint8_t* percent); // 生成fido种子
-secbool se_u2f_register(
-    const uint8_t app_id[32],
-    const uint8_t challenge[32],
-    uint8_t key_handle[64],
-    uint8_t pub_key[65],
-    uint8_t sign[64]
-);                                                                                                 // U2F注册
+secbool se_u2f_register(const uint8_t app_id[32], const uint8_t challenge[32], uint8_t key_handle[64], uint8_t pub_key[65], uint8_t sign[64]);                                                                                                 // U2F注册
 secbool se_u2f_gen_handle_and_node(const uint8_t app_id[32], uint8_t key_handle[64], HDNode* out); // U2F生成句柄和节点
 secbool se_u2f_validate_handle(const uint8_t app_id[32], const uint8_t key_handle[64]);            // U2F验证句柄
 secbool se_u2f_authenticate(

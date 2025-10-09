@@ -40,9 +40,7 @@ void pn532_power_ctl(bool on_off);
 bool pn532_getFirmwareVersion(uint8_t* response, uint16_t* response_length);
 bool pn532_SAMConfiguration(void);
 bool pn532_inListPassiveTarget(void);
-bool pn532_inDataExchange(
-    uint8_t* send_data, uint8_t send_data_length, uint8_t* response, uint16_t* response_length
-);
+bool pn532_inDataExchange(uint8_t* send_data, uint8_t send_data_length, uint8_t* response, uint16_t* response_length);
 bool pn532_tgGetStatus(uint8_t* status);
 
 #endif

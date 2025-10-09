@@ -724,7 +724,6 @@ int main(void) {
     system_clock_config(); // 系统时钟初始化
     dwt_init();
     cpu_cache_enable();
-    // cpu_cache_disable();
     sdram_init();
 
     // enforce protection
@@ -740,7 +739,6 @@ int main(void) {
     mpu_config_base(); // base config last as it contains deny access layers and mpu may already running
     mpu_ctrl(sectrue); // ensure enabled
 
-    // __BKPT(0);
 
     // user interface
     lcd_init();
@@ -767,43 +765,39 @@ int main(void) {
 
     // display boot screen
     display_image((DISPLAY_RESX - 128) / 2, 190, 128, 128, toi_icon_onekey + 12, sizeof(toi_icon_onekey) - 12);
-    display_image(
-        (DISPLAY_RESX - 140) / 2, DISPLAY_RESY - 120, 140, 30, toi_icon_safeos + 12, sizeof(toi_icon_safeos) - 12
-    );
-    display_text_center(
-        DISPLAY_RESX / 2, DISPLAY_RESY - 64, "Powered by OneKey", -1, FONT_NORMAL, COLOR_GRAY, COLOR_BLACK
-    );
+    display_image((DISPLAY_RESX - 140) / 2, DISPLAY_RESY - 120, 140, 30, toi_icon_safeos + 12, sizeof(toi_icon_safeos) - 12);
+    display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY - 64, "Powered by OneKey", -1, FONT_NORMAL, COLOR_GRAY, COLOR_BLACK);
 #if !PRODUCTION
     display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "TEST VERSION", -1, FONT_NORMAL, COLOR_RED, COLOR_BLACK);
 #endif
 
-    STAY_REASON stay_reason;       // 状态原因
-    image_header hdr;              // 镜像头
-    secbool hdr_valid = secfalse;  // 镜像验证标志
-    secbool code_valid = secfalse; // 代码段验证标志
-    // 决定启动目标
-    BOOT_TARGET boot_target = decide_boot_target(&stay_reason, &hdr, &hdr_valid, &code_valid);
-    // todo:
-    boot_target = BOOT_TARGET_NORMAL;
-    if ( boot_target == BOOT_TARGET_BOARDLOADER ) {
-        if ( stay_reason == STAY_REASON_UPDATE_NEXT_TARGET ) {
-            try_bootloader_update(true, true);
-        } else {
-            display_boardloader_title("USB Mass Storage Mode\n", stay_reason);
-            char serial[USB_SIZ_STRING_SERIAL];
-            get_device_serial(serial, sizeof(serial));
-            usb_msc_init(serial, sizeof(serial));
-            while ( 1 ) {
-                usb_connect_switch();
-                if ( system_reset == 1 ) {
-                    hal_delay(5);
-                    restart();
-                }
-            }
-        }
-    }
+    // STAY_REASON stay_reason;       // 状态原因
+    // image_header hdr;              // 镜像头
+    // secbool hdr_valid = secfalse;  // 镜像验证标志
+    // secbool code_valid = secfalse; // 代码段验证标志
+    // // 决定启动目标
+    // BOOT_TARGET boot_target = decide_boot_target(&stay_reason, &hdr, &hdr_valid, &code_valid);
+    // // todo:
+    // boot_target = BOOT_TARGET_NORMAL;
+    // if ( boot_target == BOOT_TARGET_BOARDLOADER ) {
+    //     if ( stay_reason == STAY_REASON_UPDATE_NEXT_TARGET ) {
+    //         try_bootloader_update(true, true);
+    //     } else {
+    //         display_boardloader_title("USB Mass Storage Mode\n", stay_reason);
+    //         char serial[USB_SIZ_STRING_SERIAL];
+    //         get_device_serial(serial, sizeof(serial));
+    //         usb_msc_init(serial, sizeof(serial));
+    //         while ( 1 ) {
+    //             usb_connect_switch();
+    //             if ( system_reset == 1 ) {
+    //                 hal_delay(5);
+    //                 restart();
+    //             }
+    //         }
+    //     }
+    // }
 
-    *BOOT_TARGET_FLAG_ADDR = boot_target; // set flag for bootloader to comsume
+    // *BOOT_TARGET_FLAG_ADDR = boot_target; // set flag for bootloader to comsume
 
     set_handle_flash_ecc_error(secfalse);
     bus_fault_disable();

@@ -33,13 +33,13 @@ static void dcmi_init()
     __HAL_RCC_GPIOE_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**DCMI GPIO Configuration
-    PG10     ------> DCMI_D2
+    PG10    ------> DCMI_D2
     PG9     ------> DCMI_VSYNC
-    PG11     ------> DCMI_D3
+    PG11    ------> DCMI_D3
     PD3     ------> DCMI_D5
     PE5     ------> DCMI_D6
     PE4     ------> DCMI_D4
-    PA10     ------> DCMI_D1
+    PA10    ------> DCMI_D1
     PA9     ------> DCMI_D0
     PE6     ------> DCMI_D7
     PA6     ------> DCMI_PIXCLK

@@ -601,11 +601,11 @@ secbool thd89_transmit_ex(uint8_t addr, uint8_t* cmd, uint16_t len, uint8_t* res
 /**
  * @brief
  *
- * @param cmd       命令
- * @param len       命令长度
- * @param resp      应答
- * @param resp_len  应答长度
- * @return secbool
+ * @param   cmd       命令
+ * @param   len       命令长度
+ * @param   resp      应答
+ * @param   resp_len  应答长度
+ * @return  secbool
  */
 secbool thd89_transmit(uint8_t* cmd, uint16_t len, uint8_t* resp, uint16_t* resp_len) {
     return thd89_transmit_ex(THD89_MASTER_ADDRESS, cmd, len, resp, resp_len);
